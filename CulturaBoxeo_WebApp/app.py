@@ -45,40 +45,55 @@ def render_auth():
     st.markdown("<h1 style='text-align: center; color: #d11124; font-size: 4rem;'>CULTURA DE BOXEO</h1>", unsafe_allow_html=True)
     st.markdown("<h4 style='text-align: center; color: #888;'>FIGHT PASSPORT - ACCESO DIGITAL</h4><hr>", unsafe_allow_html=True)
     
-    modo = st.radio("Acceso", ["Iniciar Sesión", "Registrar Pasaporte"], horizontal=True)
+    # Usamos session_state para controlar qué vista mostrar si recién se registró
+    if "auth_mode" not in st.session_state:
+        st.session_state.auth_mode = "Iniciar Sesión"
+        
+    modo = st.radio("Acceso", ["Iniciar Sesión", "Registrar Pasaporte"], horizontal=True, index=0 if st.session_state.auth_mode == "Iniciar Sesión" else 1)
+    st.session_state.auth_mode = modo
     
     if modo == "Iniciar Sesión":
-        email = st.text_input("Correo electrónico")
-        password = st.text_input("Contraseña", type="password")
-        if st.button("ENTRAR AL RING"):
-            if email and password:
+        with st.form("login_form"):
+            email = st.text_input("Correo electrónico")
+            password = st.text_input("Contraseña", type="password")
+            submit_login = st.form_submit_button("ENTRAR AL RING")
+            
+        if submit_login:
+            if not email.strip() or not password.strip():
+                st.error("⚠️ Por favor, llena tu correo y contraseña.")
+            else:
                 success, data = database.authenticate_user(email, password)
                 if success:
                     st.session_state.logged_in = True
                     st.session_state.user_data = data
                     st.rerun()
                 else:
-                    st.error(data)
-            else:
-                st.warning("Ingresa tus credenciales.")
+                    st.error("❌ " + data) # Correo o contraseña incorrectos
                 
     else:
-        nombre = st.text_input("Nombre")
-        apellido = st.text_input("Apellido")
-        email = st.text_input("Correo electrónico ")
-        password = st.text_input("Contraseña ", type="password")
-        password_conf = st.text_input("Confirmar Contraseña ", type="password")
-        gym_origen = st.selectbox("¿Eres miembro de un Gimnasio Afiliado?", ["Independiente (Free)", "Socio - CBX Calpa", "Socio - Crossfit (Pro)"])
-        
-        if st.button("CREAR PASAPORTE"):
-            if password != password_conf:
-                st.error("Las contraseñas no coinciden.")
+        with st.form("registro_form"):
+            nombre = st.text_input("Nombre *")
+            apellido = st.text_input("Apellido *")
+            email = st.text_input("Correo electrónico *")
+            password = st.text_input("Contraseña (mínimo 6 caracteres) *", type="password")
+            password_conf = st.text_input("Confirmar Contraseña *", type="password")
+            gym_origen = st.selectbox("¿Eres miembro de un Gimnasio Afiliado?", ["Independiente (Free)", "Socio - CBX Calpa", "Socio - Crossfit (Pro)"])
+            
+            submit_reg = st.form_submit_button("CREAR PASAPORTE")
+            
+        if submit_reg:
+            if not all([nombre.strip(), apellido.strip(), email.strip(), password.strip(), password_conf.strip()]):
+                st.error("⚠️ Tienes que llenar absolutamente TODOS los campos marcados con *.")
+            elif password != password_conf:
+                st.error("⚠️ Las contraseñas no coinciden. Escríbelas de nuevo.")
             else:
                 success, msg = database.register_user(nombre, apellido, email, password, gym_origen)
                 if success:
-                    st.success(msg + ". Ya puedes iniciar sesión.")
+                    st.success("✅ " + msg + ". Redirigiendo al login...")
+                    st.session_state.auth_mode = "Iniciar Sesión"
+                    st.rerun() # Fuerza la recarga para mandarlo a Iniciar Sesión automáticamente
                 else:
-                    st.error(msg)
+                    st.error("❌ " + msg)
 
 # ==========================================
 # DASHBOARD PRINCIPAL
