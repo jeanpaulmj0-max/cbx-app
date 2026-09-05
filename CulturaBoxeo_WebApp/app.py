@@ -101,14 +101,19 @@ def render_auth():
 def render_dashboard():
     user = st.session_state.user_data
     
-    col_logo, col_logout = st.columns([4, 1])
+    col_logo, col_settings = st.columns([4, 1])
     with col_logo:
         st.markdown("<h2 style='color:#d11124; margin:0;'>CULTURA DE BOXEO</h2>", unsafe_allow_html=True)
-    with col_logout:
-        if st.button("SALIR", key="logout"):
-            st.session_state.logged_in = False
-            st.session_state.user_data = None
-            st.rerun()
+    with col_settings:
+        with st.popover("⚙️ Ajustes"):
+            st.markdown("**Mi Perfil**")
+            st.button("📸 Subir Foto (Pronto)")
+            st.button("💳 Billetera Web3 (Pronto)")
+            st.markdown("---")
+            if st.button("Cerrar Sesión", key="logout"):
+                st.session_state.logged_in = False
+                st.session_state.user_data = None
+                st.rerun()
 
     tab_perfil, tab_comunidad, tab_entrenamientos, tab_noticias, tab_fantasy, tab_tienda = st.tabs([
         "👤 RÉCORD", "💬 EL RING", "🥊 ACADEMIA", "📰 NOTICIAS", "🎯 FANTASY", "🛒 GEAR (USA)"
@@ -222,7 +227,7 @@ def render_dashboard():
     # ------------------ TAB: NOTICIAS ------------------
     with tab_noticias:
         if st.session_state.view_noticia is None:
-            st.header("Última Hora")
+            st.header("Última Hora (Live)")
             
             # Anuncio Periodístico Interactivo
             st.markdown("""
@@ -234,17 +239,43 @@ def render_dashboard():
             </div>
             """, unsafe_allow_html=True)
             
-            for n in mock_data.NOTICIAS:
-                st.markdown(f"""
-                <div class='news-card' style='color: white;'>
-                    <h3 style='margin-top:0; color: white;'>{n['titulo']}</h3>
-                    <p style='color: #ddd;'><i>{n['subtitulo']}</i></p>
-                    <small style='color: #aaa;'>{n['categoria']} | {n['fuente']} | {n['fecha']}</small>
+            import agente_noticias
+            
+            @st.cache_data(ttl=7200) # Se actualiza cada 2 horas automáticamente
+            def get_live_news():
+                return agente_noticias.fetch_live_news()
+                
+            noticias_vivo = get_live_news()
+            
+            # Fallback en caso de que el scraper falle (sin internet)
+            if not noticias_vivo:
+                noticias_vivo = mock_data.NOTICIAS
+            
+            for n in noticias_vivo:
+                # Diseño Editorial tipo Revista (Fondo de imagen, texto superpuesto)
+                tarjeta_html = f"""
+                <div style="position: relative; width: 100%; height: 380px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; background-image: url('{n['imagen_url']}'); background-size: cover; background-position: top center; border: 1px solid #333;">
+                    <!-- Gradiente oscuro en la parte inferior para legibilidad -->
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 70%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);"></div>
+                    
+                    <!-- Top Tags -->
+                    <div style="position: absolute; top: 15px; left: 15px; color: white; font-size: 0.7rem; font-weight: bold; letter-spacing: 2px;">CULTURA DE BOXEO</div>
+                    <div style="position: absolute; top: 15px; right: 15px; color: #ccc; font-size: 0.65rem; font-weight: bold; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 20px; border: 1px solid #555;">{n['fuente'].upper()}</div>
+                    
+                    <!-- Bottom Content -->
+                    <div style="position: absolute; bottom: 20px; left: 20px; right: 20px;">
+                        <h2 style="color: white; font-family: 'Bebas Neue', Oswald, sans-serif; margin: 0; line-height: 1.1; font-size: 2.2rem; text-transform: uppercase;">{n['titulo']}</h2>
+                        <div style="height: 3px; width: 50px; background-color: #d11124; margin: 12px 0;"></div>
+                        <small style="color: #aaa; font-family: sans-serif; font-size: 0.8rem;">{n['fecha']}</small>
+                    </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """
+                st.markdown(tarjeta_html, unsafe_allow_html=True)
+                
                 if st.button(f"Leer Artículo", key=f"btn_leer_{n['id']}"):
                     st.session_state.view_noticia = n
                     st.rerun()
+                st.markdown("<br>", unsafe_allow_html=True)
         else:
             n = st.session_state.view_noticia
             if st.button("← Volver al Feed de Noticias"):
@@ -255,7 +286,24 @@ def render_dashboard():
             st.markdown(f"**{n['subtitulo']}**")
             st.caption(f"{n['fecha']} | Fuente: {n['fuente']}")
             st.markdown(n['contenido_html'], unsafe_allow_html=True)
-            st.info("Próximamente: Haz tus Fantasy Picks relacionados a esta noticia directamente aquí.")
+            
+            # Firma del Medio (Estilo Logan Roy / Waystar)
+            st.markdown("---")
+            st.markdown("<div style='text-align: right; color: #666; font-family: serif; font-style: italic;'>Una exclusiva de <b>JP Vanguard Media Group</b></div>", unsafe_allow_html=True)
+            
+            # Mercado de Predicción Interactivo (El futuro de las apuestas)
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown("<h4 style='color: #FFD700; margin-top:0;'>📊 MERCADO DE PREDICCIÓN (ESPECULACIÓN)</h4>", unsafe_allow_html=True)
+                st.markdown(f"¿Qué crees que pasará respecto a esta noticia? Haz tu predicción y gana CBX Coins si aciertas cuando se revele la verdad.")
+                
+                col_y, col_n = st.columns(2)
+                with col_y:
+                    if st.button("SÍ, SUCEDERÁ (Cuota x2.5)"):
+                        st.toast("Especulación registrada. ¡Veamos qué depara el futuro!", icon="📈")
+                with col_n:
+                    if st.button("NO SUCEDERÁ (Cuota x1.3)"):
+                        st.toast("Especulación registrada. ¡Veamos qué depara el futuro!", icon="📉")
 
     # ------------------ TAB: FANTASY ------------------
     with tab_fantasy:
