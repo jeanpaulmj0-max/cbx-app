@@ -162,15 +162,19 @@ def render_dashboard():
 
     # ------------------ TAB: COMUNIDAD ------------------
     with tab_comunidad:
-        st.header("El Ring")
-        nuevo_post = st.text_area("¿Qué tienes en mente, campeón?", placeholder="Comparte tu entrenamiento o debate de boxeo...")
+        st.header("El Ring - Comunidad Global")
+        st.markdown("<p style='color:#888;'>El cruce perfecto entre el Boxeo Profesional, el Cine, y la Cultura Urbana.</p>", unsafe_allow_html=True)
+        
+        tema_post = st.selectbox("Categoría de tu publicación:", ["Debate de Peleas (Profesional)", "Cine de Boxeo y Arte IA", "Cultura Urbana", "Entrenamientos"])
+        nuevo_post = st.text_area("¿Qué tienes en mente, campeón?", placeholder="Comparte tu opinión, debate de películas, o análisis...")
+        
         if st.button("Publicar en El Ring"):
             if nuevo_post.strip():
                 st.session_state.comunidad_posts.insert(0, {
                     "id": f"C{len(st.session_state.comunidad_posts)+1}",
                     "autor": f"{user['nombre']}_{user['apellido'][0]}",
                     "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "contenido": nuevo_post
+                    "contenido": f"**[{tema_post}]**<br>{nuevo_post}"
                 })
                 st.success("Publicado.")
                 st.rerun()
@@ -180,9 +184,9 @@ def render_dashboard():
         st.markdown("---")
         for post in st.session_state.comunidad_posts:
             st.markdown(f"""
-            <div class='post-card'>
+            <div class='post-card' style='color: white;'>
                 <small style='color:#d11124;'><b>@{post['autor']}</b> • {post['fecha']}</small>
-                <p style='margin-top:5px;'>{post['contenido']}</p>
+                <p style='margin-top:5px; color: white;'>{post['contenido']}</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -219,12 +223,23 @@ def render_dashboard():
     with tab_noticias:
         if st.session_state.view_noticia is None:
             st.header("Última Hora")
+            
+            # Anuncio Periodístico Interactivo
+            st.markdown("""
+            <div style='background-color: #1a1a1a; padding: 15px; border-left: 5px solid #d11124; margin-bottom: 20px;'>
+                <h3 style='color: white; margin-top:0;'>LA COMUNICACIÓN TIENE QUE EVOLUCIONAR. LA COMUNICACIÓN TIENE QUE CONECTAR.</h3>
+                <p style='color: #ccc; font-style: italic;'>
+                El periodismo deportivo ha estado estático por décadas. Prepárate para la primera plataforma de noticias de boxeo verdaderamente interactiva. Pronto, tu lectura se transformará en acción: debate, genera pronósticos (Picks) y domina el juego desde la misma noticia.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
             for n in mock_data.NOTICIAS:
                 st.markdown(f"""
-                <div class='news-card'>
-                    <h3 style='margin-top:0;'>{n['titulo']}</h3>
-                    <p><i>{n['subtitulo']}</i></p>
-                    <small>{n['categoria']} | {n['fuente']} | {n['fecha']}</small>
+                <div class='news-card' style='color: white;'>
+                    <h3 style='margin-top:0; color: white;'>{n['titulo']}</h3>
+                    <p style='color: #ddd;'><i>{n['subtitulo']}</i></p>
+                    <small style='color: #aaa;'>{n['categoria']} | {n['fuente']} | {n['fecha']}</small>
                 </div>
                 """, unsafe_allow_html=True)
                 if st.button(f"Leer Artículo", key=f"btn_leer_{n['id']}"):
@@ -240,24 +255,57 @@ def render_dashboard():
             st.markdown(f"**{n['subtitulo']}**")
             st.caption(f"{n['fecha']} | Fuente: {n['fuente']}")
             st.markdown(n['contenido_html'], unsafe_allow_html=True)
-            st.info("Botón de compartir: Próximamente V1.1")
+            st.info("Próximamente: Haz tus Fantasy Picks relacionados a esta noticia directamente aquí.")
 
     # ------------------ TAB: FANTASY ------------------
     with tab_fantasy:
-        st.header("Fantasy Picks")
-        st.markdown(f"**Tu saldo actual:** {user['cbx_coins']} CBX Coins 🪙")
-        st.warning("⚠️ Modo DEMO: Las apuestas reales y el sistema de ranking global llegarán en la V1.1. Tus picks actuales se guardan de manera local temporal.")
+        st.header("Casino Digital - Fantasy Picks")
+        
+        # Sistema de Incentivos (El 'Por Qué' apostar)
+        with st.expander("🏆 ¿POR QUÉ APOSTAR TUS CBX COINS?", expanded=True):
+            st.markdown("""
+            Multiplica tus monedas y desbloquea la economía real del boxeo. Tus CBX Coins tienen valor:
+            *   🛒 **Llega a 5,000 CBX:** 20% OFF en Guantes de Importación.
+            *   🥊 **Llega a 10,000 CBX:** 1 Sesión de entrenamiento (Rounds) gratis en gimnasios afiliados.
+            *   💸 **Llega a 50,000 CBX:** Desbloqueas el Nivel PRO y entras al modelo de **Revenue Share**.
+            """)
+            
+        st.markdown(f"**Tu bolsa de apuestas (Bankroll):** {user['cbx_coins']} CBX Coins 🪙")
+        
+        # Infraestructura de "Tiendas Propias"
+        st.markdown("""
+        <div style='background-color: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;'>
+            <h4 style='color: #FFD700; margin-top: 0;'>🏦 Abre tu propia Casa de Apuestas</h4>
+            <p style='color: #ccc; font-size: 0.9rem;'>
+            ¿Tienes buena racha? En el Nivel 5 podrás abrir tu propia "Sub-Franquicia". Publica tus propios pronósticos para que otros usuarios apuesten en tu casa, ¡y llévate comisiones (Revenue Share) por cada apuesta generada en tu tienda!
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         for cart in mock_data.FANTASY_CARTELERAS:
             st.subheader(f"📅 {cart['titulo']}")
             for p in cart['combates']:
-                st.markdown(f"{p['peleador_a']} vs {p['peleador_b']}")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button(f"{p['peleador_a']} (x{p['cuota_a']})", key=f"f_{p['id']}_a"):
-                        st.toast("Pick registrado (Simulación V1.0)", icon="✅")
-                with col2:
-                    if st.button(f"{p['peleador_b']} (x{p['cuota_b']})", key=f"f_{p['id']}_b"):
-                        st.toast("Pick registrado (Simulación V1.0)", icon="✅")
+                with st.container(border=True):
+                    st.markdown(f"<h4 style='text-align: center; margin-bottom: 0;'>{p['peleador_a']} vs {p['peleador_b']}</h4>", unsafe_allow_html=True)
+                    
+                    # Infraestructura tipo Casino (Boleta de Apuesta)
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown(f"<div style='text-align:center; padding:10px; background:#111; color:white; border-radius:5px;'><b>{p['peleador_a']}</b><br>Cuota: x{p['cuota_a']}</div>", unsafe_allow_html=True)
+                    with col2:
+                        st.markdown(f"<div style='text-align:center; padding:10px; background:#111; color:white; border-radius:5px;'><b>{p['peleador_b']}</b><br>Cuota: x{p['cuota_b']}</div>", unsafe_allow_html=True)
+                    
+                    st.markdown("---")
+                    col_bet1, col_bet2 = st.columns([2, 1])
+                    with col_bet1:
+                        monto = st.number_input("Monto a apostar (CBX Coins)", min_value=10, max_value=user['cbx_coins'], step=10, key=f"monto_{p['id']}")
+                        seleccion = st.selectbox("Selecciona tu ganador", [p['peleador_a'], p['peleador_b']], key=f"sel_{p['id']}")
+                    with col_bet2:
+                        cuota_actual = p['cuota_a'] if seleccion == p['peleador_a'] else p['cuota_b']
+                        retorno = monto * cuota_actual
+                        st.markdown(f"<div style='text-align:center; margin-top:25px;'><small>Retorno Potencial:</small><br><b style='color:#00ff00; font-size:1.2rem;'>{retorno:.2f} CBX</b></div>", unsafe_allow_html=True)
+                        if st.button("COLOCAR APUESTA", key=f"btn_bet_{p['id']}"):
+                            st.toast(f"¡Apuesta de {monto} CBX a {seleccion} registrada con éxito!", icon="🎰")
 
     # ------------------ TAB: TIENDA ------------------
     with tab_tienda:
