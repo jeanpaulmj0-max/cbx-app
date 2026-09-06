@@ -22,6 +22,10 @@ st.markdown("""
     html, body, p, label, input, li { font-family: 'Oswald', sans-serif; color: #ffffff; }
     h1, h2, h3, h4, h5, h6 { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 1px; color: #ffffff !important;}
     
+    /* Forzar fondo oscuro y texto claro en Expanders */
+    div[data-testid="stExpander"] details { background-color: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 8px; }
+    div[data-testid="stExpander"] summary { color: #FFD700 !important; background-color: transparent !important;}
+    div[data-testid="stExpander"] summary svg { fill: #FFD700 !important; }
     .stButton>button {
         width: 100%; border-radius: 4px; font-family: 'Bebas Neue', sans-serif !important;
         font-size: 1.2rem; background-color: #d11124; color: white; border: none;
@@ -201,8 +205,8 @@ def render_dashboard():
                 st.session_state.user_data = None
                 st.rerun()
 
-    tab_perfil, tab_comunidad, tab_entrenamientos, tab_noticias, tab_fantasy, tab_tienda = st.tabs([
-        "👤 RÉCORD", "💬 EL RING", "🥊 ACADEMIA", "📰 NOTICIAS", "🎯 FANTASY", "🛒 TIENDA"
+    tab_perfil, tab_entrenamientos, tab_noticias, tab_fantasy = st.tabs([
+        "👤 PASAPORTE", "🥊 ACADEMIA", "📰 NOTICIAS", "🎯 CASINO FANTASY"
     ])
     
     # ------------------ TAB: PERFIL (RÉCORD DE PELEADOR) ------------------
@@ -273,61 +277,6 @@ def render_dashboard():
             if st.button("Enviar Registro de Entrenamiento"):
                 st.session_state.user_data['cbx_coins'] += 50
                 st.success(f"¡Registro guardado! Ganaste 50 CBX por entrenar hoy. **Análisis proyectado:** Tu Sombra ha mejorado un +{sombra*10}% desde el mes pasado.")
-
-    # ------------------ TAB: COMUNIDAD ------------------
-    with tab_comunidad:
-        st.header("El Ring - Comunidad Global")
-        st.markdown("<p style='color:#ccc;'>El cruce perfecto entre el Boxeo Profesional, el Cine, y la Cultura Urbana.</p>", unsafe_allow_html=True)
-        
-        with st.container(border=True):
-            nuevo_post = st.text_area("Nuevo Post", placeholder="¿Qué tienes en mente, campeón? Comparte debates, análisis o fotos...", label_visibility="collapsed")
-            
-            # Gadgets tipo Twitter/Threads
-            col_t1, col_t2, col_t3, col_t4, col_btn = st.columns([1,1,1,1,3])
-            with col_t1: st.button("📷 Foto", use_container_width=True)
-            with col_t2: st.button("🎞️ GIF", use_container_width=True)
-            with col_t3: st.button("📊 Encuesta", use_container_width=True)
-            with col_t4: st.button("📍 Lugar", use_container_width=True)
-            with col_btn:
-                btn_publicar = st.button("PUBLICAR", use_container_width=True, type="primary")
-
-        if btn_publicar:
-            if nuevo_post.strip():
-                st.session_state.comunidad_posts.insert(0, {
-                    "id": f"C{len(st.session_state.comunidad_posts)+1}",
-                    "autor": f"{user['nombre']}_{user['apellido'][0]}",
-                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "contenido": f"{nuevo_post}"
-                })
-                
-                # Sistema de Incentivos (Gamificación)
-                if "posts_count" not in st.session_state:
-                    st.session_state.posts_count = 0
-                st.session_state.posts_count += 1
-                
-                if st.session_state.posts_count == 2:
-                    st.session_state.user_data['cbx_coins'] += 1000
-                    st.balloons()
-                    st.success("🎉 ¡RECOMPENSA DESBLOQUEADA! Has ganado 1,000 CBX Coins por tus primeras interacciones. Úsalas para obtener descuentos en la Tienda.")
-                elif st.session_state.posts_count == 10:
-                    st.session_state.user_data['cbx_coins'] += 5000
-                    st.balloons()
-                    st.success("🔥 ¡VETERANO DEL RING! Has ganado 5,000 CBX Coins. Puedes usarlas para desbloquear equipo premium con descuento.")
-                else:
-                    st.success(f"Publicado en El Ring. (Post #{st.session_state.posts_count})")
-                    
-                st.rerun()
-            else:
-                st.warning("Escribe algo antes de publicar.")
-                
-        st.markdown("---")
-        for post in st.session_state.comunidad_posts:
-            st.markdown(f"""
-            <div class='post-card' style='color: white;'>
-                <small style='color:#d11124;'><b>@{post['autor']}</b> • {post['fecha']}</small>
-                <p style='margin-top:5px; color: white;'>{post['contenido']}</p>
-            </div>
-            """, unsafe_allow_html=True)
 
     # ------------------ TAB: ENTRENAMIENTOS ------------------
     with tab_entrenamientos:
@@ -462,7 +411,7 @@ def render_dashboard():
             st.markdown("### 🎟️ Mis Boletas Activas")
             for b in st.session_state.mis_apuestas:
                 st.markdown(f"""
-                <div style='background:rgba(34,34,34,0.9); padding:10px; border-radius:5px; border-left:3px solid #00ff00; margin-bottom:5px;'>
+                <div style='background:rgba(34,34,34,0.9); padding:10px; border-radius:5px; border-left:3px solid #00ff00; margin-bottom:5px; color:white;'>
                     <b>{b['pelea']}</b> | Pick: <span style='color:#FFD700;'>{b['pick']}</span> | Riesgo: {b['monto']} CBX | Pago Potencial: <b style='color:#00ff00;'>{b['retorno']:.2f} CBX</b>
                 </div>
                 """, unsafe_allow_html=True)
@@ -523,49 +472,7 @@ def render_dashboard():
                             else:
                                 st.error("Fondos insuficientes para esta apuesta.")
 
-    # ------------------ TAB: TIENDA ------------------
-    with tab_tienda:
-        st.header("Mercado de Campeones")
-        st.markdown(f"**Tu Saldo:** {user['cbx_coins']} CBX Coins 🪙")
-        st.markdown("Equípate con lo mejor. Selecciona tu producto, revisa los detalles y finaliza la compra con nuestro asesor vía WhatsApp.")
-        
-        # UI Estilo E-Commerce Moderno (Amazon / Netflix)
-        tab_guantes, tab_sacos, tab_accesorios, tab_suplementos = st.tabs(["🥊 Guantes", "🏋️ Sacos e Implementos", "⚡ Accesorios", "💊 Suplementos"])
-        
-        def renderizar_categoria(categoria_filtro):
-            import urllib.parse
-            productos = [p for p in TIENDA_DB if p['categoria'] == categoria_filtro]
-            for i, prod in enumerate(productos):
-                with st.container(border=True):
-                    col_img, col_info = st.columns([1, 2])
-                    with col_img:
-                        st.markdown(f"<img src='{prod['img_url']}' style='width:100%; border-radius:8px;'>", unsafe_allow_html=True)
-                    with col_info:
-                        st.markdown(f"<h3 style='margin-top:0;'>{prod['nombre']}</h3>", unsafe_allow_html=True)
-                        st.markdown(f"<h2 style='color:#00ff00; margin:0;'>{prod['precio']}</h2>", unsafe_allow_html=True)
-                        
-                        with st.expander("Ver Detalles del Producto (Especificaciones)"):
-                            st.markdown(f"**Descripción Original:** {prod['desc']}")
-                            st.markdown("---")
-                            st.markdown("* ✅ Disponibilidad verificada")
-                            st.markdown("* 📦 Envío nacional e internacional disponible")
-                            st.markdown("* 🪙 **¿Tienes saldo CBX?** Consulta con el asesor por tu descuento directo.")
-                        
-                        # Generar Link de WhatsApp
-                        mensaje_ws = f"Hola, vengo de la app ROUNDS BY CBX. Me interesa comprar: {prod['nombre']} ({prod['precio']}). Mi usuario es: {user['nombre']} {user['apellido']}."
-                        url_ws = f"https://wa.me/593998593226?text={urllib.parse.quote(mensaje_ws)}"
-                        
-                        st.link_button(f"Comprar vía WhatsApp", url=url_ws, type="primary")
-                st.markdown("<br>", unsafe_allow_html=True)
-        
-        with tab_guantes:
-            renderizar_categoria("Guantes")
-        with tab_sacos:
-            renderizar_categoria("Sacos e Implementos")
-        with tab_accesorios:
-            renderizar_categoria("Artículos de Entrenamiento")
-        with tab_suplementos:
-            renderizar_categoria("Suplementos")
+
 
 if __name__ == "__main__":
     if st.session_state.logged_in and st.session_state.user_data:
