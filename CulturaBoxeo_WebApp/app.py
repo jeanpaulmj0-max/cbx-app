@@ -67,13 +67,23 @@ st.markdown("""
         object-fit: cover;
     }
     .product-info {
-        padding: 15px;
-    }
+    /* Ocultar Branding y Menús de Streamlit para ilusión de App Nativa */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
+    
+    <!-- PWA / NATIVE APP INJECTION -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Rounds CBX">
+    <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=256&h=256&fit=crop">
+    <link rel="shortcut icon" href="https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=64&h=64&fit=crop">
 """, unsafe_allow_html=True)
 
 # ==========================================
-# DATOS POR DEFECTO (A PRUEBA DE FALLOS MVP)
+# SIMULADOR DE BASE DE DATOS LOCAL (PARA TRANSICIÓN A SUPABASE)
 # ==========================================
 POSTS_INICIALES = [
     {"id": "C3", "autor": "BoxFan_99", "fecha": "Hace 5 minutos", "contenido": "**[Debate de Peleas]**<br>¿Alguien más piensa que a Canelo ya no le quedan rivales de verdad en 168? Debería subir a 175 otra vez o pelear con Benavidez ya. ¿Qué opinan?"},
@@ -116,58 +126,43 @@ if "mis_apuestas" not in st.session_state: st.session_state.mis_apuestas = []
 # AUTENTICACIÓN
 # ==========================================
 def render_auth():
-    st.markdown("<h1 style='text-align: center; color: #d11124; font-size: 4.5rem; text-shadow: 2px 2px 4px #000;'>ROUNDS BY CBX</h1>", unsafe_allow_html=True)
-    st.markdown("<h4 style='text-align: center; color: #aaa;'>FIGHT PASSPORT - ACCESO DIGITAL</h4><hr style='border-color:#444;'>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #d11124; font-size: 4rem; margin-bottom:0;'>ROUNDS BY CBX</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #ccc; font-size: 1.2rem;'>El Pasaporte Oficial del Boxeo</p>", unsafe_allow_html=True)
     
-    # Usamos session_state para controlar qué vista mostrar si recién se registró
-    if "auth_mode" not in st.session_state:
-        st.session_state.auth_mode = "Iniciar Sesión"
-        
-    modo = st.radio("Acceso", ["Iniciar Sesión", "Registrar Pasaporte"], horizontal=True, index=0 if st.session_state.auth_mode == "Iniciar Sesión" else 1)
+    st.markdown("---")
+    
+    modo = st.radio("Acceso", ["Iniciar Sesión", "Crear Pasaporte"], horizontal=True, label_visibility="collapsed")
     st.session_state.auth_mode = modo
     
-    if modo == "Iniciar Sesión":
-        with st.form("login_form"):
+    with st.container(border=True):
+        if modo == "Iniciar Sesión":
+            st.subheader("Entrar al Ring")
             email = st.text_input("Correo electrónico")
             password = st.text_input("Contraseña", type="password")
-            submit_login = st.form_submit_button("ENTRAR AL RING")
-            
-        if submit_login:
-            if not email.strip() or not password.strip():
-                st.error("⚠️ Por favor, llena tu correo y contraseña.")
-            else:
-                success, data = database.authenticate_user(email, password)
+            if st.button("INICIAR SESIÓN", type="primary"):
+                success, msg, user_data = database.login_user(email, password)
                 if success:
                     st.session_state.logged_in = True
-                    st.session_state.user_data = data
+                    st.session_state.user_data = user_data
+                    st.success("¡Bienvenido, campeón!")
                     st.rerun()
                 else:
-                    st.error("❌ " + data) # Correo o contraseña incorrectos
-                
-    else:
-        with st.form("registro_form"):
-            nombre = st.text_input("Nombre *")
-            apellido = st.text_input("Apellido *")
-            email = st.text_input("Correo electrónico *")
-            password = st.text_input("Contraseña (mínimo 6 caracteres) *", type="password")
-            password_conf = st.text_input("Confirmar Contraseña *", type="password")
-            gym_origen = st.selectbox("Sede / Afiliación", ["Independiente (Free)", "Rounds CBX por Best Training", "Rounds CBX por CrossFit Company"])
+                    st.error("❌ " + msg)
+        else:
+            st.subheader("Crear Pasaporte de Peleador")
+            col1, col2 = st.columns(2)
+            with col1: nombre = st.text_input("Nombre")
+            with col2: apellido = st.text_input("Apellido")
+            email = st.text_input("Correo electrónico")
+            password = st.text_input("Contraseña", type="password")
+            gym_origen = st.selectbox("¿Cuál es tu esquina (Sede)?", ["Independiente (Sin Gym)", "Rounds CBX (Matriz)", "Best Training", "CrossFit Company"])
             
-            submit_reg = st.form_submit_button("CREAR PASAPORTE")
-            
-        if submit_reg:
-            if not all([nombre.strip(), apellido.strip(), email.strip(), password.strip(), password_conf.strip()]):
-                st.error("⚠️ Tienes que llenar absolutamente TODOS los campos marcados con *.")
-            elif password != password_conf:
-                st.error("⚠️ Las contraseñas no coinciden. Escríbelas de nuevo.")
-            else:
+            if st.button("REGISTRARME", type="primary"):
                 success, msg = database.register_user(nombre, apellido, email, password, gym_origen)
                 if success:
                     st.success("✅ " + msg + ". Redirigiendo al login...")
                     st.session_state.auth_mode = "Iniciar Sesión"
                     st.rerun() # Fuerza la recarga para mandarlo a Iniciar Sesión automáticamente
-                else:
-                    st.error("❌ " + msg)
 
 # ==========================================
 # DASHBOARD PRINCIPAL
@@ -178,7 +173,6 @@ def render_dashboard():
     col_logo, col_settings = st.columns([4, 1])
     with col_logo:
         st.markdown("<h2 style='color:#d11124; margin:0; font-size: 2.5rem;'>ROUNDS BY CBX</h2>", unsafe_allow_html=True)
-        # ------------------ SISTEMA DE NIVELES (Estilo Gemini) ------------------
         if user.get('rol') == 'pro':
             st.markdown("<span style='background-color:#FFD700; color:black; padding:3px 10px; border-radius:15px; font-weight:bold; font-size:0.8rem;'>👑 PROMOTOR (PRO - $5/mes)</span>", unsafe_allow_html=True)
         elif user.get('rol') == 'member':
@@ -190,13 +184,19 @@ def render_dashboard():
         with st.popover("⚙️ AJUSTES", use_container_width=True):
             st.markdown("<h4 style='color:#d11124; margin-bottom:0;'>MI PASAPORTE</h4>", unsafe_allow_html=True)
             
-            # Botón / Uploader de Foto
-            foto_up = st.file_uploader("📸 Cargar Foto de Perfil (Avatar)", type=['jpg','png','jpeg'], label_visibility="collapsed")
-            if foto_up is not None:
-                import base64
-                base64_img = base64.b64encode(foto_up.getvalue()).decode()
-                st.session_state.user_avatar = f"data:image/png;base64,{base64_img}"
-                st.success("Avatar actualizado")
+            # Selector de Avatares Premium (A prueba de móviles)
+            st.markdown("📸 **Avatar de Peleador**")
+            avatar_opts = {
+                "Predeterminado": "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
+                "Tyson Vibe": "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=200",
+                "Ali Vibe": "https://images.unsplash.com/photo-1509255929945-586a420363aa?q=80&w=200",
+                "Rocky Vibe": "https://images.unsplash.com/photo-1614312674483-36526eb6dfdc?q=80&w=200"
+            }
+            sel_av = st.selectbox("Elige tu estilo:", list(avatar_opts.keys()), label_visibility="collapsed")
+            if st.button("Guardar Avatar"):
+                st.session_state.user_avatar = avatar_opts[sel_av]
+                st.success("Actualizado")
+                st.rerun()
                 
             st.button("💳 Conectar Billetera Web3 (Fase 2)", use_container_width=True)
             st.markdown("---")
@@ -205,8 +205,8 @@ def render_dashboard():
                 st.session_state.user_data = None
                 st.rerun()
 
-    tab_perfil, tab_entrenamientos, tab_noticias, tab_fantasy = st.tabs([
-        "👤 PASAPORTE", "🥊 ACADEMIA", "📰 NOTICIAS", "🎯 CASINO FANTASY"
+    tab_perfil, tab_entrenamientos, tab_noticias = st.tabs([
+        "👤 PASAPORTE", "🥊 ACADEMIA & WOD", "📰 NOTICIAS"
     ])
     
     # ------------------ TAB: PERFIL (RÉCORD DE PELEADOR) ------------------
@@ -261,22 +261,49 @@ def render_dashboard():
                     st.markdown("**Descuento para Socios (Gym Rounds):** $2.50/mes")
                     st.button("Verificar Membresía Gym")
                     
-        # NUEVO SISTEMA: MARCADORES DE PROGRESO MENSUAL
-        st.markdown("### 📈 Evaluador de Desempeño (Informe Mensual)")
-        st.markdown("<p style='color:#ccc;'>Registra tus métricas diarias al terminar tu sesión. A fin de mes, cuantificaremos tu evolución como peleador.</p>", unsafe_allow_html=True)
+        # SISTEMA DE ENTRENAMIENTO ESTILO FIGHTCAMP / PUNCHLAB
+        st.markdown("### 📈 Bitácora de Entrenamiento (Hoy)")
+        st.markdown("<p style='color:#ccc;'>Registra tu sesión de hoy. Tu entrenador podrá validar estos datos en tu pasaporte.</p>", unsafe_allow_html=True)
         
+        # Inicializar métricas en session_state para simular la persistencia
+        if "entrenamientos_completados" not in st.session_state: st.session_state.entrenamientos_completados = 0
+        if "punch_volume_total" not in st.session_state: st.session_state.punch_volume_total = 0
+        if "racha_dias" not in st.session_state: st.session_state.racha_dias = 0
+
         with st.expander("📝 Cargar Informe de Sesión Hoy", expanded=True):
-            col_m1, col_m2, col_m3 = st.columns(3)
+            col_m1, col_m2 = st.columns(2)
             with col_m1:
-                sombra = st.slider("Sombra (Técnica / Fluidez)", 1, 10, 5)
+                tiempo_entrenamiento = st.number_input("⏱️ Tiempo de entrenamiento (minutos)", min_value=15, max_value=120, value=60, step=5)
+                enfoque = st.multiselect("🎯 Enfoque Principal", ["Sombra", "Costal pesado", "Mitts/Gobernadoras", "Sparring", "Físico"], default=["Sombra"])
             with col_m2:
-                saco = st.slider("Golpeo al Saco (Poder / Conexión)", 1, 10, 5)
-            with col_m3:
-                cardio = st.slider("Acondicionamiento (Resistencia)", 1, 10, 5)
+                intensidad = st.slider("🔥 Intensidad Percibida (1-10)", 1, 10, 7)
+                st.caption("1 = Paseo en el parque | 10 = Nivel Campeonato")
+
+            if st.button("Guardar Entrenamiento del Día", type="primary"):
+                # Simular cálculo avanzado (Punch Volume Estimado = minutos * intensidad * factor)
+                factor_boxeo = 20 if ("Costal pesado" in enfoque or "Mitts/Gobernadoras" in enfoque) else 10
+                volumen_estimado = int(tiempo_entrenamiento * (intensidad/10.0) * factor_boxeo)
                 
-            if st.button("Enviar Registro de Entrenamiento"):
-                st.session_state.user_data['cbx_coins'] += 50
-                st.success(f"¡Registro guardado! Ganaste 50 CBX por entrenar hoy. **Análisis proyectado:** Tu Sombra ha mejorado un +{sombra*10}% desde el mes pasado.")
+                st.session_state.entrenamientos_completados += 1
+                st.session_state.punch_volume_total += volumen_estimado
+                st.session_state.racha_dias += 1
+                recompensa = 50 * st.session_state.racha_dias
+                st.session_state.user_data['cbx_coins'] += recompensa
+                
+                st.success(f"¡Sesión Guardada! Has lanzado un estimado de **{volumen_estimado} golpes** (Output). Ganaste {recompensa} CBX.")
+                st.rerun()
+
+        # Dashboard de Analíticas de Usuario
+        if st.session_state.entrenamientos_completados > 0:
+            st.markdown("---")
+            st.markdown("<h3 style='color:#FFD700;'>📊 MIS ESTADÍSTICAS (GYM ANALYTICS)</h3>", unsafe_allow_html=True)
+            col_a1, col_a2, col_a3 = st.columns(3)
+            with col_a1:
+                st.metric(label="🔥 Racha Actual", value=f"{st.session_state.racha_dias} Días", delta="¡Sigue así!")
+            with col_a2:
+                st.metric(label="🥊 Punch Volume (Est.)", value=f"{st.session_state.punch_volume_total}", delta="+ Poder")
+            with col_a3:
+                st.metric(label="✅ Sesiones (Mes)", value=f"{st.session_state.entrenamientos_completados}", delta="Registradas")
 
     # ------------------ TAB: ENTRENAMIENTOS ------------------
     with tab_entrenamientos:
@@ -336,9 +363,9 @@ def render_dashboard():
                 noticias_vivo = mock_data.NOTICIAS
             
             for n in noticias_vivo:
-                # Asegurar fallback de imagen si la noticia no trajo una
-                img_bg = n.get('imagen_url')
-                if not img_bg:
+                # Asegurar fallback de imagen ultra estricto
+                img_bg = n.get('imagen_url', '')
+                if not img_bg or len(str(img_bg)) < 10 or str(img_bg).lower() in ['none', 'null']:
                     img_bg = "https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=800"
                     
                 tarjeta_html = f"""<div style="position: relative; width: 100%; height: 380px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; background-image: url('{img_bg}'); background-size: cover; background-position: top center; border: 1px solid #333;"><div style="position: absolute; bottom: 0; left: 0; right: 0; height: 70%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);"></div><div style="position: absolute; top: 15px; left: 15px; color: white; font-size: 0.7rem; font-weight: bold; letter-spacing: 2px; text-shadow: 1px 1px 2px #000;">ROUNDS BY CBX</div><div style="position: absolute; top: 15px; right: 15px; color: #fff; font-size: 0.65rem; font-weight: bold; background: rgba(209,17,36,0.8); padding: 4px 10px; border-radius: 20px; border: 1px solid #555;">{n['fuente'].upper()}</div><div style="position: absolute; bottom: 20px; left: 20px; right: 20px;"><h2 style="color: white; margin: 0; line-height: 1.1; font-size: 2.2rem; text-transform: uppercase; text-shadow: 2px 2px 4px #000;">{n['titulo']}</h2><div style="height: 3px; width: 50px; background-color: #d11124; margin: 12px 0;"></div><small style="color: #ccc; font-size: 0.8rem;">{n['fecha']}</small></div></div>"""
