@@ -1,6 +1,6 @@
 # mock_data.py
 # Capa de datos para Cultura de Boxeo V1.0
-
+from datetime import datetime, timedelta
 ENTRENAMIENTOS = {
     "🔥 DROP 1: FUNDAMENTOS DEL STRIKING (Próximamente)": [
         {
