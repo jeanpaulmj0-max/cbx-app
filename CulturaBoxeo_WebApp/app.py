@@ -6,22 +6,16 @@ from datetime import datetime
 # ==========================================
 # CONFIGURACIÓN DE PÁGINA Y ESTILOS
 # ==========================================
-st.set_page_config(page_title="Cultura de Boxeo", page_icon="🥊", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="ROUNDS BY CBX", page_icon="🥊", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;700&display=swap');
     
-    /* Animación 10x de Fondo (Premium Dark Gradient) para no ensuciar la legibilidad */
-    @keyframes gradientBG {
-        0% {background-position: 0% 50%;}
-        50% {background-position: 100% 50%;}
-        100% {background-position: 0% 50%;}
-    }
+    /* Animación 10x y Fondo de Cine de Boxeo (Gritty/Vintage con overlay oscuro) */
     .stApp {
-        background: linear-gradient(-45deg, #0a0a0a, #1a0505, #111111, #220505);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
+        background: linear-gradient(rgba(15, 10, 10, 0.85), rgba(25, 5, 5, 0.95)), url('https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=2000') no-repeat center center fixed !important;
+        background-size: cover !important;
     }
     
     html, body, p, div, span, label, input, li { font-family: 'Oswald', sans-serif !important; }
@@ -32,16 +26,16 @@ st.markdown("""
     }
     .stButton>button:hover { background-color: #a00c1b; color: white; }
     .passport-card {
-        background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+        background: linear-gradient(135deg, rgba(30,30,30,0.9) 0%, rgba(42,42,42,0.9) 100%);
         padding: 20px; border-radius: 12px; border: 1px solid #444; border-left: 5px solid #d11124;
         color: white; margin-bottom: 20px;
     }
-    .news-card { padding: 15px; background: #1a1a1a; border-radius: 8px; margin-bottom:15px; }
-    .post-card { padding: 15px; background: #222; border-radius: 8px; margin-bottom:10px; border-left: 3px solid #666; }
+    .news-card { padding: 15px; background: rgba(26,26,26,0.9); border-radius: 8px; margin-bottom:15px; }
+    .post-card { padding: 15px; background: rgba(34,34,34,0.9); border-radius: 8px; margin-bottom:10px; border-left: 3px solid #666; }
     
     /* E-Commerce Card Style */
     .product-card {
-        background-color: #111;
+        background-color: rgba(17,17,17,0.9);
         border: 1px solid #333;
         border-radius: 10px;
         overflow: hidden;
@@ -64,6 +58,35 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
+# DATOS POR DEFECTO (A PRUEBA DE FALLOS MVP)
+# ==========================================
+POSTS_INICIALES = [
+    {"id": "C3", "autor": "BoxFan_99", "fecha": "Hace 5 minutos", "contenido": "**[Debate de Peleas]**<br>¿Alguien más piensa que a Canelo ya no le quedan rivales de verdad en 168? Debería subir a 175 otra vez o pelear con Benavidez ya. ¿Qué opinan?"},
+    {"id": "C2", "autor": "Tyson_Fan", "fecha": "Hace 2 horas", "contenido": "**[Cine de Boxeo y Arte IA]**<br>Acabo de ver la nueva peli de boxeo. La fotografía es increíble, pero los movimientos en el ring se ven muy falsos. Faltó asesoría de peleadores reales."},
+    {"id": "C1", "autor": "Rounds_Oficial", "fecha": "Hace 5 horas", "contenido": "**[Entrenamientos]**<br>¡Bienvenidos a la comunidad! Compartan aquí sus videos de sparring, dudas técnicas o especulaciones. Los usuarios con mejores aportes recibirán monedas semanales."}
+]
+
+TIENDA_DB = [
+    {"id": "P1", "nombre": "Guantes Hayabusa T3 16oz", "precio": "$160.00", "categoria": "Guantes", "img_url": "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=500&q=80", "desc": "Soporte de muñeca patentado V-Strap. (Importación directa)."},
+    {"id": "P2", "nombre": "Cleto Reyes Entrenamiento 14oz", "precio": "$220.00", "categoria": "Guantes", "img_url": "https://images.unsplash.com/photo-1512686125587-578d1cbbe190?auto=format&fit=crop&w=500&q=80", "desc": "Piel de cabra auténtica, hechos a mano. El guante de los campeones."},
+    {"id": "P3", "nombre": "Winning Professional 16oz", "precio": "$380.00", "categoria": "Guantes", "img_url": "https://images.unsplash.com/photo-1596328222879-11ba106bb983?auto=format&fit=crop&w=500&q=80", "desc": "La marca #1 del mundo. Máxima protección de nudillos."},
+    {"id": "S1", "nombre": "Creatina Nutrex Research 300g", "precio": "$30.00", "categoria": "Suplementos", "img_url": "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?auto=format&fit=crop&w=500&q=80", "desc": "Creatina monohidratada pura. Beneficio PRO: 15% de Descuento."},
+    {"id": "S2", "nombre": "Ronnie Coleman Signature Whey", "precio": "$75.00", "categoria": "Suplementos", "img_url": "https://images.unsplash.com/photo-1579722820308-d74e571900a9?auto=format&fit=crop&w=500&q=80", "desc": "Proteína premium para recuperación muscular. Sabor Vainilla."},
+    {"id": "I1", "nombre": "Saco Pesado Everlast 100lbs", "precio": "$120.00", "categoria": "Sacos e Implementos", "img_url": "https://images.unsplash.com/photo-1517838503506-3b561768809d?auto=format&fit=crop&w=500&q=80", "desc": "Trabajo de potencia extrema."},
+    {"id": "A1", "nombre": "Vendas Profesionales Ringside", "precio": "$15.00", "categoria": "Artículos de Entrenamiento", "img_url": "https://images.unsplash.com/photo-1595252876632-478a59483dc8?auto=format&fit=crop&w=500&q=80", "desc": "Mezcla semi-elástica para protección perfecta."}
+]
+
+ACADEMIA_DB = {
+    "🔥 DROP 1: FUNDAMENTOS DEL STRIKING": [
+        {"id": "T01", "titulo": "Postura, Guardia y Desplazamiento", "nivel_orden": "Episodio 1", "descripcion": "La base de todo peleador.", "duracion": "10 min", "objetivo": "Técnica", "equipamiento": "Ninguno", "estado": "proximamente", "fecha_drop": "Desde el 14 de Septiembre", "instrucciones": "Próximamente", "acceso": "free"},
+        {"id": "T02", "titulo": "Mecánica del Jab y Recto", "nivel_orden": "Episodio 2", "descripcion": "El 1-2. Poder desde la cadera.", "duracion": "15 min", "objetivo": "Poder", "equipamiento": "Ninguno", "estado": "proximamente", "fecha_drop": "Desde el 14 de Septiembre", "instrucciones": "Próximamente", "acceso": "free"}
+    ],
+    "🥊 RUTINAS CBX STUDIO": [
+        {"id": "T03", "titulo": "HIIT Boxeo: Sombra", "nivel_orden": "Rutina 1", "descripcion": "Quema de calorías máxima.", "duracion": "20 min", "objetivo": "Cardio", "equipamiento": "Ninguno", "estado": "proximamente", "fecha_drop": "Desde el 14 de Septiembre", "instrucciones": "Próximamente", "acceso": "member"}
+    ]
+}
+
+# ==========================================
 # INICIALIZACIÓN
 # ==========================================
 database.init_db()
@@ -71,7 +94,8 @@ database.init_db()
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "user_data" not in st.session_state: st.session_state.user_data = None
 if "view_noticia" not in st.session_state: st.session_state.view_noticia = None
-if "comunidad_posts" not in st.session_state: st.session_state.comunidad_posts = mock_data.COMUNIDAD_POSTS_INICIALES
+if "comunidad_posts" not in st.session_state: st.session_state.comunidad_posts = POSTS_INICIALES
+if "mis_apuestas" not in st.session_state: st.session_state.mis_apuestas = []
 
 # ==========================================
 # AUTENTICACIÓN
@@ -148,12 +172,20 @@ def render_dashboard():
             st.markdown("<span style='background-color:#555; color:white; padding:3px 10px; border-radius:15px; font-weight:bold; font-size:0.8rem;'>🎒 PELEADOR AMATEUR (Free)</span>", unsafe_allow_html=True)
 
     with col_settings:
-        with st.popover("⚙️ Ajustes"):
-            st.markdown("**Mi Perfil**")
-            st.button("📸 Subir Foto (Pronto)")
-            st.button("💳 Billetera Web3 (Pronto)")
+        with st.popover("⚙️ AJUSTES Y HERRAMIENTAS", use_container_width=True):
+            st.markdown("<h4 style='color:#d11124; margin-bottom:0;'>MI PASAPORTE</h4>", unsafe_allow_html=True)
+            
+            # Botón / Uploader de Foto
+            foto_up = st.file_uploader("📸 Cargar Foto de Perfil (Avatar)", type=['jpg','png','jpeg'], label_visibility="collapsed")
+            if foto_up is not None:
+                import base64
+                base64_img = base64.b64encode(foto_up.getvalue()).decode()
+                st.session_state.user_avatar = f"data:image/png;base64,{base64_img}"
+                st.success("Avatar actualizado")
+                
+            st.button("💳 Conectar Billetera Web3 (Fase 2)", use_container_width=True)
             st.markdown("---")
-            if st.button("Cerrar Sesión", key="logout"):
+            if st.button("🔴 Cerrar Sesión", key="logout", use_container_width=True):
                 st.session_state.logged_in = False
                 st.session_state.user_data = None
                 st.rerun()
@@ -169,18 +201,23 @@ def render_dashboard():
         xp_next = nivel * 100
         progreso_xp = (xp % 100)
         
+        avatar_img = st.session_state.get('user_avatar', 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png')
+        
         st.markdown(f"""
         <div class="passport-card">
             <h2 style='margin-top:0; color:#d11124;'>RÉCORD DE PELEADOR</h2>
             <hr style='border-color:#444;'>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h1 style="margin: 0;">{user['nombre'].upper()} {user['apellido'].upper()}</h1>
-                    <p style="color: #aaa; margin: 0;">Esquina: {user['gym_origen']}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <img src="{avatar_img}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #d11124; box-shadow: 0 0 10px rgba(209,17,36,0.5);">
+                    <div>
+                        <h1 style="margin: 0; font-size: 2.5rem;">{user['nombre'].upper()} {user['apellido'].upper()}</h1>
+                        <p style="color: #aaa; margin: 0; font-size: 1.1rem;">Esquina: {user['gym_origen']}</p>
+                    </div>
                 </div>
-                <div style="text-align: right;">
-                    <h2 style="margin: 0; color: #FFD700;">NIVEL {nivel}</h2>
-                    <small>{xp} / {xp_next} XP</small>
+                <div style="text-align: right; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 8px; border: 1px solid #333;">
+                    <h2 style="margin: 0; color: #FFD700; font-size: 2rem;">NIVEL {nivel}</h2>
+                    <small style="color: #ccc;">{xp} / {xp_next} XP</small>
                 </div>
             </div>
         </div>
@@ -215,18 +252,27 @@ def render_dashboard():
     # ------------------ TAB: COMUNIDAD ------------------
     with tab_comunidad:
         st.header("El Ring - Comunidad Global")
-        st.markdown("<p style='color:#888;'>El cruce perfecto entre el Boxeo Profesional, el Cine, y la Cultura Urbana.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#ccc;'>El cruce perfecto entre el Boxeo Profesional, el Cine, y la Cultura Urbana.</p>", unsafe_allow_html=True)
         
-        tema_post = st.selectbox("Categoría de tu publicación:", ["Debate de Peleas (Profesional)", "Cine de Boxeo y Arte IA", "Cultura Urbana", "Entrenamientos"])
-        nuevo_post = st.text_area("¿Qué tienes en mente, campeón?", placeholder="Comparte tu opinión, debate de películas, o análisis...")
-        
-        if st.button("Publicar en El Ring"):
+        with st.container(border=True):
+            nuevo_post = st.text_area("Nuevo Post", placeholder="¿Qué tienes en mente, campeón? Comparte debates, análisis o fotos...", label_visibility="collapsed")
+            
+            # Gadgets tipo Twitter/Threads
+            col_t1, col_t2, col_t3, col_t4, col_btn = st.columns([1,1,1,1,3])
+            with col_t1: st.button("📷 Foto", use_container_width=True)
+            with col_t2: st.button("🎞️ GIF", use_container_width=True)
+            with col_t3: st.button("📊 Encuesta", use_container_width=True)
+            with col_t4: st.button("📍 Lugar", use_container_width=True)
+            with col_btn:
+                btn_publicar = st.button("PUBLICAR", use_container_width=True, type="primary")
+
+        if btn_publicar:
             if nuevo_post.strip():
                 st.session_state.comunidad_posts.insert(0, {
                     "id": f"C{len(st.session_state.comunidad_posts)+1}",
                     "autor": f"{user['nombre']}_{user['apellido'][0]}",
                     "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "contenido": f"**[{tema_post}]**<br>{nuevo_post}"
+                    "contenido": f"{nuevo_post}"
                 })
                 
                 # Sistema de Incentivos (Gamificación)
@@ -261,9 +307,9 @@ def render_dashboard():
     # ------------------ TAB: ENTRENAMIENTOS ------------------
     with tab_entrenamientos:
         st.header("Academia de Combate")
-        st.markdown("<p style='color:#888;'>Estructuras de aprendizaje paso a paso. Únete a los próximos drops.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#ccc;'>Estructuras de aprendizaje paso a paso. Únete a los próximos drops.</p>", unsafe_allow_html=True)
         
-        for ruta, niveles in mock_data.ENTRENAMIENTOS.items():
+        for ruta, niveles in ACADEMIA_DB.items():
             with st.expander(f"{ruta}", expanded=True):
                 for t in niveles:
                     st.markdown(f"**{t['nivel_orden']}: {t['titulo']}** ({t['duracion']})")
@@ -294,8 +340,8 @@ def render_dashboard():
             
             # Anuncio Periodístico Interactivo
             st.markdown("""
-            <div style='background-color: #1a1a1a; padding: 15px; border-left: 5px solid #d11124; margin-bottom: 20px;'>
-                <h3 style='color: white; margin-top:0;'>LA COMUNICACIÓN TIENE QUE EVOLUCIONAR. LA COMUNICACIÓN TIENE QUE CONECTAR.</h3>
+            <div style='background-color: rgba(26,26,26,0.9); padding: 15px; border-left: 5px solid #d11124; margin-bottom: 20px;'>
+                <h3 style='color: white; margin-top:0;'>LA COMUNICACIÓN TIENE QUE EVOLUCIONAR.</h3>
                 <p style='color: #ccc; font-style: italic;'>
                 El periodismo deportivo ha estado estático por décadas. Prepárate para la primera plataforma de noticias verdaderamente interactiva. Convierte la lectura en acción: debate y especula en nuestros mercados.
                 </p>
@@ -312,13 +358,20 @@ def render_dashboard():
             
             # Fallback en caso de que el scraper falle (sin internet)
             if not noticias_vivo:
+                import mock_data
                 noticias_vivo = mock_data.NOTICIAS
             
             for n in noticias_vivo:
-                tarjeta_html = f"""<div style="position: relative; width: 100%; height: 380px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; background-image: url('{n['imagen_url']}'); background-size: cover; background-position: top center; border: 1px solid #333;"><div style="position: absolute; bottom: 0; left: 0; right: 0; height: 70%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);"></div><div style="position: absolute; top: 15px; left: 15px; color: white; font-size: 0.7rem; font-weight: bold; letter-spacing: 2px;">ROUNDS BY CBX</div><div style="position: absolute; top: 15px; right: 15px; color: #ccc; font-size: 0.65rem; font-weight: bold; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 20px; border: 1px solid #555;">{n['fuente'].upper()}</div><div style="position: absolute; bottom: 20px; left: 20px; right: 20px;"><h2 style="color: white; margin: 0; line-height: 1.1; font-size: 2.2rem; text-transform: uppercase;">{n['titulo']}</h2><div style="height: 3px; width: 50px; background-color: #d11124; margin: 12px 0;"></div><small style="color: #aaa; font-size: 0.8rem;">{n['fecha']}</small></div></div>"""
+                # Asegurar fallback de imagen si la noticia no trajo una
+                img_bg = n.get('imagen_url')
+                if not img_bg:
+                    img_bg = "https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=800"
+                    
+                tarjeta_html = f"""<div style="position: relative; width: 100%; height: 380px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; background-image: url('{img_bg}'); background-size: cover; background-position: top center; border: 1px solid #333;"><div style="position: absolute; bottom: 0; left: 0; right: 0; height: 70%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);"></div><div style="position: absolute; top: 15px; left: 15px; color: white; font-size: 0.7rem; font-weight: bold; letter-spacing: 2px; text-shadow: 1px 1px 2px #000;">ROUNDS BY CBX</div><div style="position: absolute; top: 15px; right: 15px; color: #fff; font-size: 0.65rem; font-weight: bold; background: rgba(209,17,36,0.8); padding: 4px 10px; border-radius: 20px; border: 1px solid #555;">{n['fuente'].upper()}</div><div style="position: absolute; bottom: 20px; left: 20px; right: 20px;"><h2 style="color: white; margin: 0; line-height: 1.1; font-size: 2.2rem; text-transform: uppercase; text-shadow: 2px 2px 4px #000;">{n['titulo']}</h2><div style="height: 3px; width: 50px; background-color: #d11124; margin: 12px 0;"></div><small style="color: #ccc; font-size: 0.8rem;">{n['fecha']}</small></div></div>"""
                 st.markdown(tarjeta_html, unsafe_allow_html=True)
                 
                 if st.button(f"Leer Artículo", key=f"btn_leer_{n['id']}"):
+                    n['imagen_url'] = img_bg # Actualizar el objeto con la imagen fallback
                     st.session_state.view_noticia = n
                     st.rerun()
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -334,7 +387,7 @@ def render_dashboard():
             st.markdown(n['contenido_html'], unsafe_allow_html=True)
             
             st.markdown("---")
-            st.markdown("<div style='text-align: right; color: #666; font-style: italic;'>Una exclusiva de <b>JP Vanguard Media Group</b></div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: right; color: #aaa; font-style: italic;'>Una exclusiva de <b>JP Vanguard Media Group</b></div>", unsafe_allow_html=True)
             
             # Mercado de Predicción Interactivo
             st.markdown("<br>", unsafe_allow_html=True)
@@ -354,7 +407,9 @@ def render_dashboard():
     with tab_fantasy:
         st.header("Casino Digital - Fantasy Picks")
         
-        with st.expander("🏆 ¿CÓMO CANJEAR TUS CBX COINS?", expanded=True):
+        st.info("💡 **VISIÓN EARLY ADOPTERS:** En este momento estamos validando un producto que en un futuro te permitirá **ganar dinero real**. Los usuarios más fieles que participen en esta fase Beta tendrán beneficios económicos exclusivos en la siguiente etapa.")
+        
+        with st.expander("🏆 ¿CÓMO CANJEAR TUS CBX COINS AHORA?", expanded=True):
             st.markdown("""
             El dinero real lo usas en la Tienda. Tus CBX Coins sirven para desbloquear súper-descuentos y beneficios:
             *   🛒 **10,000 CBX:** Canjea por un cupón de 20% OFF en Guantes de Importación.
@@ -362,11 +417,26 @@ def render_dashboard():
             *   💸 **Usuarios PRO:** Ganan un 15% adicional de descuento en toda la tienda automáticamente.
             """)
             
-        st.markdown(f"**Tu bolsa de apuestas:** {user['cbx_coins']} CBX Coins 🪙")
+        col_bank, col_bets = st.columns(2)
+        with col_bank:
+            st.markdown(f"<div style='background:#111; padding:15px; border-radius:8px; border-left:4px solid #FFD700;'><h4>Bankroll:</h4><h2 style='color:#00ff00; margin:0;'>{user['cbx_coins']} CBX 🪙</h2></div>", unsafe_allow_html=True)
+        with col_bets:
+            st.markdown(f"<div style='background:#111; padding:15px; border-radius:8px; border-left:4px solid #d11124;'><h4>Apuestas Activas:</h4><h2 style='color:white; margin:0;'>{len(st.session_state.mis_apuestas)} 🎟️</h2></div>", unsafe_allow_html=True)
+            
+        if len(st.session_state.mis_apuestas) > 0:
+            st.markdown("### 🎟️ Mis Boletas Activas")
+            for b in st.session_state.mis_apuestas:
+                st.markdown(f"""
+                <div style='background:rgba(34,34,34,0.9); padding:10px; border-radius:5px; border-left:3px solid #00ff00; margin-bottom:5px;'>
+                    <b>{b['pelea']}</b> | Pick: <span style='color:#FFD700;'>{b['pick']}</span> | Riesgo: {b['monto']} CBX | Pago Potencial: <b style='color:#00ff00;'>{b['retorno']:.2f} CBX</b>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("---")
         
         # Infraestructura de Comunidades de Especulación
         st.markdown("""
-        <div style='background-color: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;'>
+        <div style='background-color: rgba(34,34,34,0.9); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;'>
             <h4 style='color: #FFD700; margin-top: 0;'>👑 Conviértete en Promotor de Fantasy</h4>
             <p style='color: #ccc; font-size: 0.9rem;'>
             ¿Quieres liderar tu propia comunidad? Los usuarios <b>PRO ($5/mes)</b> pueden crear sus propios "Mercados de Especulación" (Ej: <i>¿Peleará McGregor vs Topuria en 2027?</i>) e invitar a otros a apostar, llevándose una comisión de los premios.
@@ -381,18 +451,19 @@ def render_dashboard():
                 st.error("🔒 Servicio Bloqueado: Exclusivo para PROMOTORES.")
                 st.info("Mejora tu cuenta a PRO por solo $5.00/mes y obtén la licencia comercial para crear comunidades de especulación.")
         
+        import mock_data
         for cart in mock_data.FANTASY_CARTELERAS:
             st.subheader(f"📅 {cart['titulo']}")
             for p in cart['combates']:
                 with st.container(border=True):
-                    st.markdown(f"<h4 style='text-align: center; margin-bottom: 0;'>{p['peleador_a']} vs {p['peleador_b']}</h4>", unsafe_allow_html=True)
+                    st.markdown(f"<h4 style='text-align: center; margin-bottom: 0;'>🥊 {p['peleador_a']} <span style='color:#d11124;'>VS</span> {p['peleador_b']} 🥊</h4>", unsafe_allow_html=True)
                     
                     # Infraestructura tipo Casino (Boleta de Apuesta)
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.markdown(f"<div style='text-align:center; padding:10px; background:#111; color:white; border-radius:5px;'><b>{p['peleador_a']}</b><br>Cuota: x{p['cuota_a']}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='text-align:center; padding:10px; background:rgba(17,17,17,0.9); color:white; border-radius:5px;'><b>{p['peleador_a']}</b><br>🔥 Cuota: x{p['cuota_a']}</div>", unsafe_allow_html=True)
                     with col2:
-                        st.markdown(f"<div style='text-align:center; padding:10px; background:#111; color:white; border-radius:5px;'><b>{p['peleador_b']}</b><br>Cuota: x{p['cuota_b']}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='text-align:center; padding:10px; background:rgba(17,17,17,0.9); color:white; border-radius:5px;'><b>{p['peleador_b']}</b><br>🔥 Cuota: x{p['cuota_b']}</div>", unsafe_allow_html=True)
                     
                     st.markdown("---")
                     col_bet1, col_bet2 = st.columns([2, 1])
@@ -406,7 +477,13 @@ def render_dashboard():
                         if st.button("COLOCAR APUESTA", key=f"btn_bet_{p['id']}"):
                             if user['cbx_coins'] >= monto:
                                 st.session_state.user_data['cbx_coins'] -= monto
-                                st.success(f"¡Apuesta de {monto} CBX a {seleccion} registrada con éxito! Tu saldo restante es {st.session_state.user_data['cbx_coins']} CBX.")
+                                st.session_state.mis_apuestas.append({
+                                    "pelea": f"{p['peleador_a']} vs {p['peleador_b']}",
+                                    "pick": seleccion,
+                                    "monto": monto,
+                                    "retorno": retorno
+                                })
+                                st.success(f"¡Boleta ingresada con éxito! Tu saldo restante es {st.session_state.user_data['cbx_coins']} CBX.")
                                 st.rerun()
                             else:
                                 st.error("Fondos insuficientes para esta apuesta.")
@@ -422,7 +499,7 @@ def render_dashboard():
         
         def renderizar_categoria(categoria_filtro):
             import urllib.parse
-            productos = [p for p in mock_data.TIENDA_PRODUCTOS if p['categoria'] == categoria_filtro]
+            productos = [p for p in TIENDA_DB if p['categoria'] == categoria_filtro]
             col1, col2 = st.columns(2)
             for i, prod in enumerate(productos):
                 with (col1 if i % 2 == 0 else col2):
