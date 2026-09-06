@@ -156,9 +156,10 @@ def render_auth():
             email = st.text_input("Correo electrónico")
             password = st.text_input("Contraseña", type="password")
             gym_origen = st.selectbox("¿Cuál es tu esquina (Sede)?", ["Independiente (Sin Gym)", "Rounds CBX (Matriz)", "Best Training", "CrossFit Company"])
+            codigo_staff = st.text_input("Código de Staff (Solo Entrenadores)", type="password", help="Si eres alumno, deja este campo vacío.")
             
             if st.button("REGISTRARME", type="primary"):
-                success, msg = database.register_user(nombre, apellido, email, password, gym_origen)
+                success, msg = database.register_user(nombre, apellido, email, password, gym_origen, codigo_staff)
                 if success:
                     st.success("✅ " + msg + ". Redirigiendo al login...")
                     st.session_state.auth_mode = "Iniciar Sesión"
@@ -205,17 +206,45 @@ def render_dashboard():
                 st.session_state.user_data = None
                 st.rerun()
 
-    tab_perfil, tab_entrenamientos, tab_noticias = st.tabs([
-        "👤 PASAPORTE", "🥊 ACADEMIA & WOD", "📰 NOTICIAS"
-    ])
+    tabs_list = ["👤 PASAPORTE", "🥊 ACTIVIDADES", "📚 ALMANAQUE"]
+    if user.get('rol') == 'coach':
+        tabs_list.insert(1, "📋 DASHBOARD COACH")
+        
+    tabs = st.tabs(tabs_list)
     
-    # ------------------ TAB: PERFIL (RÉCORD DE PELEADOR) ------------------
+    tab_perfil = tabs[0]
+    if user.get('rol') == 'coach':
+        tab_coach = tabs[1]
+        tab_actividades = tabs[2]
+        tab_almanaque = tabs[3]
+    else:
+        tab_actividades = tabs[1]
+        tab_almanaque = tabs[2]
+        
+    # ------------------ TAB: PERFIL (PASSPORT) ------------------
     with tab_perfil:
         xp = user.get('xp', 0)
         nivel = (xp // 100) + 1
         xp_next = nivel * 100
         progreso_xp = (xp % 100)
+        # Temporada y Avatar
+        import base64
         
+        col_pass1, col_pass2 = st.columns([3, 1])
+        with col_pass1:
+            st.markdown("### TEMPORADA 2026")
+            st.caption("Día 249 / 365 | 40 Sesiones Registradas")
+            
+        with col_pass2:
+            with st.popover("📷 Tomar Foto"):
+                foto_camara = st.camera_input("Sonríe al lente")
+                if foto_camara is not None:
+                    base64_img = base64.b64encode(foto_camara.getvalue()).decode()
+                    st.session_state.user_avatar = f"data:image/jpeg;base64,{base64_img}"
+                    # Guardaríamos en SQLite aquí
+                    st.success("Foto guardada con éxito.")
+                    st.rerun()
+
         avatar_img = st.session_state.get('user_avatar', 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png')
         
         st.markdown(f"""
@@ -272,158 +301,100 @@ def render_dashboard():
                 st.balloons()
                 st.success("¡Misión cumplida! Coach notificado.")
                     
-        # SISTEMA DE ENTRENAMIENTO ESTILO FIGHTCAMP / PUNCHLAB
-        st.markdown("### 📈 Bitácora de Entrenamiento (Hoy)")
-        st.markdown("<p style='color:#ccc;'>Registra tu sesión de hoy. Tu entrenador podrá validar estos datos en tu pasaporte.</p>", unsafe_allow_html=True)
+        # REGISTRO DE ENTRENAMIENTO Y WELLNESS CHECK-IN
+        st.markdown("### 📈 Bitácora & Wellness Check-in")
+        st.markdown("<p style='color:#ccc;'>Registra tu estado post-sesión. Estos datos ayudan a tu Coach a nivelar la clase.</p>", unsafe_allow_html=True)
         
-        # Inicializar métricas en session_state para simular la persistencia
-        if "entrenamientos_completados" not in st.session_state: st.session_state.entrenamientos_completados = 0
-        if "punch_volume_total" not in st.session_state: st.session_state.punch_volume_total = 0
-        if "racha_dias" not in st.session_state: st.session_state.racha_dias = 0
-
-        with st.expander("📝 Cargar Informe de Sesión Hoy", expanded=True):
-            col_m1, col_m2 = st.columns(2)
-            with col_m1:
-                tiempo_entrenamiento = st.number_input("⏱️ Tiempo de entrenamiento (minutos)", min_value=15, max_value=120, value=60, step=5)
-                enfoque = st.multiselect("🎯 Enfoque Principal", ["Sombra", "Costal pesado", "Mitts/Gobernadoras", "Sparring", "Físico"], default=["Sombra"])
-            with col_m2:
-                intensidad = st.slider("🔥 Intensidad Percibida (1-10)", 1, 10, 7)
-                st.caption("1 = Paseo en el parque | 10 = Nivel Campeonato")
-
-            if st.button("Guardar Entrenamiento del Día", type="primary"):
-                # Simular cálculo avanzado (Punch Volume Estimado = minutos * intensidad * factor)
-                factor_boxeo = 20 if ("Costal pesado" in enfoque or "Mitts/Gobernadoras" in enfoque) else 10
-                volumen_estimado = int(tiempo_entrenamiento * (intensidad/10.0) * factor_boxeo)
+        if "entrenamientos_completados" not in st.session_state: st.session_state.entrenamientos_completados = 40
+        
+        with st.expander("📝 Registrar Sesión de Hoy", expanded=True):
+            mood_opts = ["Alegre", "Eufórico", "Relajado", "Motivado", "Neutral", "Cansado", "Agotado", "Frustrado", "Desanimado", "Estresado"]
+            st.selectbox("🧠 Estado de Ánimo (Mood)", mood_opts)
+            
+            col_w1, col_w2 = st.columns(2)
+            with col_w1:
+                st.slider("🔋 Energía", 1, 5, 3)
+                st.slider("❤️ Recuperación", 1, 5, 3)
+            with col_w2:
+                st.slider("📉 Fatiga", 1, 5, 3)
+                st.slider("🔥 Motivación", 1, 5, 4)
                 
+            gap_opts = ["Jab", "Cross", "Hook", "Defensa", "Footwork", "Combinaciones", "Condición física", "Técnica", "Sparring", "Otro"]
+            st.selectbox("¿Qué sentiste que te faltó aprender/mejorar hoy?", gap_opts)
+            
+            if st.button("Guardar Sesión y Check-in", type="primary"):
                 st.session_state.entrenamientos_completados += 1
-                st.session_state.punch_volume_total += volumen_estimado
-                st.session_state.racha_dias += 1
-                recompensa = 50 * st.session_state.racha_dias
-                st.session_state.user_data['cbx_coins'] += recompensa
-                
-                st.success(f"¡Sesión Guardada! Has lanzado un estimado de **{volumen_estimado} golpes** (Output). Ganaste {recompensa} CBX.")
+                st.success(f"¡Sesión Guardada! (Sesión {st.session_state.entrenamientos_completados} de la temporada).")
                 st.rerun()
 
         # Dashboard de Analíticas de Usuario
         if st.session_state.entrenamientos_completados > 0:
             st.markdown("---")
-            st.markdown("<h3 style='color:#FFD700;'>📊 MIS ESTADÍSTICAS (GYM ANALYTICS)</h3>", unsafe_allow_html=True)
-            col_a1, col_a2, col_a3 = st.columns(3)
+            st.markdown("<h3 style='color:#FFD700;'>📊 ESTADÍSTICAS TEMPORADA 2026</h3>", unsafe_allow_html=True)
+            col_a1, col_a2 = st.columns(2)
             with col_a1:
-                st.metric(label="🔥 Racha Actual", value=f"{st.session_state.racha_dias} Días", delta="¡Sigue así!")
+                st.metric(label="✅ Sesiones (Año)", value=f"{st.session_state.entrenamientos_completados}", delta="¡Buen ritmo!")
             with col_a2:
-                st.metric(label="🥊 Punch Volume (Est.)", value=f"{st.session_state.punch_volume_total}", delta="+ Poder")
-            with col_a3:
-                st.metric(label="✅ Sesiones (Mes)", value=f"{st.session_state.entrenamientos_completados}", delta="Registradas")
+                st.metric(label="💪 Motivación Promedio", value="4.2 / 5", delta="Alta")
 
-    # ------------------ TAB: ENTRENAMIENTOS ------------------
-    with tab_entrenamientos:
-        st.header("Academia de Combate")
-        st.markdown("<p style='color:#ccc;'>Estructuras de aprendizaje paso a paso. Únete a los próximos drops.</p>", unsafe_allow_html=True)
+    # ------------------ TAB: DASHBOARD COACH (Solo para Entrenadores) ------------------
+    if user.get('rol') == 'coach':
+        with tab_coach:
+            st.header("📊 Tablero del Entrenador")
+            st.markdown(f"<p style='color:#ccc;'>Analíticas de bienestar exclusivas de tu sede: <b>{user['gym_origen']}</b>.</p>", unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown(f"### Estado General: {user['gym_origen']}")
+                col_c1, col_c2, col_c3 = st.columns(3)
+                col_c1.metric("Ánimo", "72%", "+5%")
+                col_c2.metric("Fatiga", "68%", "-2%")
+                col_c3.metric("Recuperación", "75%", "+10%")
+                st.info("Insight: Muchos alumnos en tu sede sienten que necesitan mejorar defensa esta semana.")
+
+    # ------------------ TAB: ACTIVIDADES ------------------
+    with tab_actividades:
+        st.header(f"Ring de la Sede: {user['gym_origen']}")
+        st.markdown("<p style='color:#ccc;'>Mensajes, misiones y recordatorios exclusivos de esta sede.</p>", unsafe_allow_html=True)
         
-        for ruta, niveles in ACADEMIA_DB.items():
-            with st.expander(f"{ruta}", expanded=True):
-                for t in niveles:
-                    st.markdown(f"**{t['nivel_orden']}: {t['titulo']}** ({t['duracion']})")
+        if user.get('rol') == 'coach':
+            with st.expander(f"📝 Transmitir mensaje a todos en {user['gym_origen']}", expanded=True):
+                msj = st.text_area("Mensaje para la clase:")
+                if st.button("Enviar Actividad"):
+                    st.success(f"Actividad publicada exitosamente a los alumnos de {user['gym_origen']}.")
                     
-                    # Validar acceso
-                    tiene_acceso = False
-                    if t['acceso'] == 'free': tiene_acceso = True
-                    elif t['acceso'] == 'member' and user['rol'] in ['member', 'pro']: tiene_acceso = True
-                    elif t['acceso'] == 'pro' and user['rol'] == 'pro': tiene_acceso = True
-                    
-                    if tiene_acceso:
-                        st.write(t['descripcion'])
-                        st.caption(f"Objetivo: {t['objetivo']} | Equipo: {t['equipamiento']}")
-                        
-                        if t.get('estado') == 'proximamente' or not t.get('video_url'):
-                            st.info(f"⏳ **PRÓXIMO DROP:** Disponible {t.get('fecha_drop', 'Próximamente')}. ¡Mantente atento a la comunidad!")
-                        else:
-                            st.info(t['instrucciones'])
-                            st.video(t['video_url'])
-                    else:
-                        st.error(f"🔒 Contenido exclusivo. Requiere membresía AFILIADO o PRO.")
-                    st.markdown("---")
+        st.markdown("### Septiembre 2026")
+        
+        with st.chat_message("coach", avatar="🥊"):
+            st.markdown("**COACH ESTEFANO**")
+            st.write("Chicos, esta semana vamos a trabajar más defensa y movilidad. Recuerden practicar su jab-cross.")
+            st.caption("Hace 2 horas")
+            
+        with st.chat_message("coach", avatar="🥊"):
+            st.markdown("**COACH ESTEFANO**")
+            st.write("El sábado tendremos sesión especial de Sparring. 10:00 AM. Traigan cabezal.")
+            st.caption("Hace 1 día")
 
-    # ------------------ TAB: NOTICIAS ------------------
-    with tab_noticias:
-        if st.session_state.view_noticia is None:
-            st.header("Última Hora (Live)")
-            
-            # Anuncio Periodístico Interactivo
-            st.markdown("""
-            <div style='background-color: rgba(26,26,26,0.9); padding: 15px; border-left: 5px solid #d11124; margin-bottom: 20px;'>
-                <h3 style='color: white; margin-top:0;'>LA COMUNICACIÓN TIENE QUE EVOLUCIONAR.</h3>
-                <p style='color: #ccc; font-style: italic;'>
-                El periodismo deportivo ha estado estático por décadas. Prepárate para la primera plataforma de noticias verdaderamente interactiva. Convierte la lectura en acción: debate y especula en nuestros mercados.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            import agente_noticias
-            
-            @st.cache_data(ttl=7200) # Se actualiza cada 2 horas automáticamente
-            def get_live_news():
-                return agente_noticias.fetch_live_news()
+    # ------------------ TAB: ALMANAQUE ------------------
+    with tab_almanaque:
+        st.header("📚 Almanaque de Boxeo")
+        st.markdown("<p style='color:#ccc;'>Archivo histórico y biblioteca técnica de Rounds.</p>", unsafe_allow_html=True)
+        
+        st.subheader("Técnicas Básicas (Drop 1)")
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            with st.container(border=True):
+                st.markdown("### 1. El Jab")
+                st.write("Golpe recto con la mano adelantada. Fundamento de la distancia.")
+        with col_t2:
+            with st.container(border=True):
+                st.markdown("### 2. El Cross (Recto)")
+                st.write("Golpe de poder con la mano atrasada. Rotación de cadera clave.")
                 
-            noticias_vivo = get_live_news()
-            
-            # Fallback en caso de que el scraper falle (sin internet)
-            if not noticias_vivo:
-                import mock_data
-                noticias_vivo = mock_data.NOTICIAS
-            
-            for n in noticias_vivo:
-                # Filtrar imagenes rotas o URLs extrañas
-                img_url = n.get('imagen_url', '')
-                if not img_url or "http" not in str(img_url):
-                    img_url = "https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=800"
-                
-                with st.container(border=True):
-                    try:
-                        st.image(img_url, use_column_width=True)
-                    except:
-                        # Si Streamlit no puede procesar la imagen remotamente, usa un hard-fallback seguro
-                        img_url = "https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=800"
-                        st.image(img_url, use_column_width=True)
-                        
-                    st.markdown(f"<h3 style='color:white; margin-bottom:0;'>{n['titulo']}</h3>", unsafe_allow_html=True)
-                    st.caption(f"📰 **{n['fuente'].upper()}** | 🕒 {n['fecha']}")
-                    
-                    col_leer, col_link = st.columns(2)
-                    with col_leer:
-                        if st.button(f"Leer Artículo", key=f"btn_leer_{n['id']}", use_container_width=True):
-                            n['imagen_url'] = img_url
-                            st.session_state.view_noticia = n
-                            st.rerun()
-                    with col_link:
-                        st.link_button("Noticia Original ↗", url=n.get('link', '#'), use_container_width=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-        else:
-            n = st.session_state.view_noticia
-            if st.button("← Volver al Feed de Noticias", type="secondary"):
-                st.session_state.view_noticia = None
-                st.rerun()
-            
-            # Formato de Artículo Premium (Estilo Netflix / NYT)
-            st.markdown(f"""
-            <div style="width: 100%; height: 400px; background-image: url('{n['imagen_url']}'); background-size: cover; background-position: center; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);"></div>
-            <h1 style='font-size: 3rem; line-height: 1.1; margin-bottom: 10px; color: #fff;'>{n['titulo']}</h1>
-            <h3 style='color: #aaa; font-family: sans-serif; font-weight: normal; margin-top: 0;'>{n.get('subtitulo', '')}</h3>
-            <p style='color: #d11124; font-weight: bold;'>{n['fecha']} | REDACCIÓN: {n['fuente']}</p>
-            <hr style='border-color: #333;'>
-            """, unsafe_allow_html=True)
-            
-            # Contenido (Simulando un artículo largo y rico de IA)
-            st.markdown(f"<div style='font-size: 1.2rem; line-height: 1.8; color: #eee; text-align: justify;'>{n['contenido_html']}</div>", unsafe_allow_html=True)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.link_button("📰 Leer fuente original completa", url=n.get('link', '#'), type="secondary")
-            
-            st.markdown("---")
-            st.markdown("<div style='text-align: right; color: #aaa; font-style: italic;'>Una exclusiva de <b>JP Vanguard Media Group</b></div>", unsafe_allow_html=True)
-            
-            # Eliminado mercado de especulación para enfocar en entrenamiento
+        st.markdown("---")
+        st.subheader("Peleas Históricas del Mes")
+        with st.container(border=True):
+            st.markdown("### Ali vs Frazier I (La Pelea del Siglo)")
+            st.caption("8 de Marzo, 1971 | Madison Square Garden")
+            st.write("La primera batalla épica entre dos campeones invictos. Un choque de estilos y personalidades que definió una era.")
 
 
 

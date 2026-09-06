@@ -28,6 +28,7 @@ def init_db():
         
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    # 1. Tabla original de usuarios (se mantiene para no romper el login)
     c.execute('''CREATE TABLE IF NOT EXISTS usuarios
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   nombre TEXT,
@@ -35,21 +36,90 @@ def init_db():
                   email TEXT UNIQUE,
                   password_hash TEXT,
                   gym_origen TEXT,
-                  cbx_coins INTEGER DEFAULT 500,
+                  cbx_coins INTEGER DEFAULT 1000,
                   is_premium BOOLEAN DEFAULT 0,
                   rol TEXT DEFAULT 'free',
-                  xp INTEGER DEFAULT 0)''')
+                  xp INTEGER DEFAULT 0,
+                  photo_blob BLOB)''')
+                  
+    # 2. Nuevas tablas CORE (Rounds Architecture)
+    c.execute('''CREATE TABLE IF NOT EXISTS branches
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT UNIQUE)''')
+                  
+    c.execute('''CREATE TABLE IF NOT EXISTS classes
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  branch_id INTEGER,
+                  name TEXT,
+                  FOREIGN KEY(branch_id) REFERENCES branches(id))''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS seasons
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  year INTEGER,
+                  start_date TEXT,
+                  end_date TEXT)''')
+                  
+    c.execute('''CREATE TABLE IF NOT EXISTS training_sessions
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  user_id INTEGER,
+                  class_id INTEGER,
+                  date TEXT,
+                  FOREIGN KEY(user_id) REFERENCES usuarios(id),
+                  FOREIGN KEY(class_id) REFERENCES classes(id))''')
+                  
+    c.execute('''CREATE TABLE IF NOT EXISTS wellness_checkins
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  session_id INTEGER,
+                  mood TEXT,
+                  energy INTEGER,
+                  fatigue INTEGER,
+                  recovery INTEGER,
+                  motivation INTEGER,
+                  learning_gap TEXT,
+                  FOREIGN KEY(session_id) REFERENCES training_sessions(id))''')
+                  
+    c.execute('''CREATE TABLE IF NOT EXISTS activities
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  coach_id INTEGER,
+                  class_id INTEGER,
+                  message TEXT,
+                  date TEXT,
+                  FOREIGN KEY(coach_id) REFERENCES usuarios(id),
+                  FOREIGN KEY(class_id) REFERENCES classes(id))''')
+
+    # Seed inicial si las sedes no existen
+    c.execute("SELECT count(*) FROM branches")
+    if c.fetchone()[0] == 0:
+        c.execute("INSERT INTO branches (name) VALUES ('Rounds - Matriz')")
+        c.execute("INSERT INTO branches (name) VALUES ('Best Training')")
+        c.execute("INSERT INTO branches (name) VALUES ('CrossFit Company')")
+        
     conn.commit()
+    
+    # Manejar ALTER TABLE para usuarios viejos que no tienen photo_blob
+    try:
+        c.execute("ALTER TABLE usuarios ADD COLUMN photo_blob BLOB")
+        conn.commit()
+    except:
+        pass # La columna ya existe
+        
     conn.close()
 
-def register_user(nombre, apellido, email, password, gym_origen):
+def register_user(nombre, apellido, email, password, gym_origen, codigo_staff=""):
     if not all([nombre, apellido, email, password]):
         return False, "Todos los campos son obligatorios."
     if len(password) < 6:
         return False, "La contraseña debe tener al menos 6 caracteres."
         
     rol = "member" if "Socio" in gym_origen else "free"
-    is_premium = 1 if rol in ["member", "pro"] else 0
+    
+    # FILTRO SECRETO PARA ENTRENADORES (OPCIÓN 1)
+    if codigo_staff == "ROUNDS-COACH-2026":
+        rol = "coach"
+    elif codigo_staff.strip() != "" and codigo_staff != "ROUNDS-COACH-2026":
+        return False, "Código de Staff inválido. Si eres alumno, deja el campo vacío."
+        
+    is_premium = 1 if rol in ["member", "pro", "coach"] else 0
     hashed_pw = hash_password(password)
     
     if supabase:
@@ -58,29 +128,28 @@ def register_user(nombre, apellido, email, password, gym_origen):
             res = supabase.table("usuarios").select("email").eq("email", email.strip().lower()).execute()
             if len(res.data) > 0:
                 return False, "El correo electrónico ya está registrado."
-            
-            # Insertar
-            supabase.table("usuarios").insert({
+                
+            nuevo = {
                 "nombre": nombre.strip(),
                 "apellido": apellido.strip(),
                 "email": email.strip().lower(),
                 "password_hash": hashed_pw,
                 "gym_origen": gym_origen,
-                "is_premium": bool(is_premium),
+                "cbx_coins": 1000,
+                "is_premium": is_premium,
                 "rol": rol,
-                "cbx_coins": 500,
                 "xp": 0
-            }).execute()
-            return True, "Registro exitoso en la Nube"
+            }
+            supabase.table("usuarios").insert(nuevo).execute()
+            return True, "Registro exitoso"
         except Exception as e:
-            return False, f"Error en la nube: {str(e)}"
+            return False, f"Error en la base de datos (Nube): {str(e)}"
     else:
-        # SQLite (Respaldo Local)
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         try:
-            c.execute("INSERT INTO usuarios (nombre, apellido, email, password_hash, gym_origen, is_premium, rol) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                      (nombre.strip(), apellido.strip(), email.strip().lower(), hashed_pw, gym_origen, is_premium, rol))
+            c.execute("INSERT INTO usuarios (nombre, apellido, email, password_hash, gym_origen, cbx_coins, is_premium, rol, xp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                      (nombre.strip(), apellido.strip(), email.strip().lower(), hashed_pw, gym_origen, 1000, is_premium, rol, 0))
             conn.commit()
             return True, "Registro exitoso (Local)"
         except sqlite3.IntegrityError:
