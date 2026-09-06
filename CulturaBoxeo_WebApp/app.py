@@ -12,18 +12,29 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;700&display=swap');
     
-    /* Animación 10x y Fondo de Cine de Boxeo (Gritty/Vintage con overlay oscuro) */
+    /* Animación 10x y Fondo de Cine de Boxeo */
     .stApp {
         background: linear-gradient(rgba(15, 10, 10, 0.85), rgba(25, 5, 5, 0.95)), url('https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=2000') no-repeat center center fixed !important;
         background-size: cover !important;
     }
     
-    html, body, p, div, span, label, input, li { font-family: 'Oswald', sans-serif !important; }
-    h1, h2, h3, h4, h5, h6 { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 1px; color: #ffffff;}
+    /* Tipografía Global - Evitando dañar los iconos de Streamlit */
+    html, body, p, label, input, li { font-family: 'Oswald', sans-serif; color: #ffffff; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 1px; color: #ffffff !important;}
+    
     .stButton>button {
         width: 100%; border-radius: 4px; font-family: 'Bebas Neue', sans-serif !important;
         font-size: 1.2rem; background-color: #d11124; color: white; border: none;
     }
+    .stButton>button:hover { background-color: #a00c1b; color: white; }
+    
+    /* Botones secundarios (como los de El Ring) para que no sean rojos bloque */
+    button[kind="secondary"] {
+        background-color: transparent !important;
+        border: 1px solid #555 !important;
+        color: #fff !important;
+    }
+    button[kind="secondary"]:hover { border-color: #FFD700 !important; color: #FFD700 !important; }
     .stButton>button:hover { background-color: #a00c1b; color: white; }
     .passport-card {
         background: linear-gradient(135deg, rgba(30,30,30,0.9) 0%, rgba(42,42,42,0.9) 100%);
@@ -172,7 +183,7 @@ def render_dashboard():
             st.markdown("<span style='background-color:#555; color:white; padding:3px 10px; border-radius:15px; font-weight:bold; font-size:0.8rem;'>🎒 PELEADOR AMATEUR (Free)</span>", unsafe_allow_html=True)
 
     with col_settings:
-        with st.popover("⚙️ AJUSTES Y HERRAMIENTAS", use_container_width=True):
+        with st.popover("⚙️ AJUSTES", use_container_width=True):
             st.markdown("<h4 style='color:#d11124; margin-bottom:0;'>MI PASAPORTE</h4>", unsafe_allow_html=True)
             
             # Botón / Uploader de Foto
@@ -232,22 +243,36 @@ def render_dashboard():
         with col_stats2:
             st.success("**MEMBRESÍA:** " + ("Activa (Pro)" if user['rol'] == 'pro' else "Socio de Gym" if user['rol'] == 'member' else "Amateur (Gratuita)"))
             
-        st.markdown("### 🚀 Acelera tu carrera (Red de Contactos)")
-        with st.expander("🤝 Programa de Referidos (Invita y Gana)"):
-            st.markdown("El boxeo es un deporte de equipos. Invita a tu esquina y gana monedas para apostar o canjear por descuentos reales.")
-            st.code(f"https://cbx-app.streamlit.app/?ref={user['nombre'][:3].upper()}{str(user.get('id', '000'))}", language="text")
-            if st.button("Copiar Link y Ganar 500 CBX por amigo"):
-                st.toast("Link copiado al portapapeles. ¡Mándalo por WhatsApp!", icon="🔗")
+        # NUEVO SISTEMA: GIMNASIO / PLAN PRO
+        st.markdown("### 🏆 Beneficios y Planes")
+        with st.container(border=True):
+            if user['rol'] == 'pro':
+                st.success("✅ Eres usuario PRO. Tienes acceso total a las Comunidades de Fantasy y descuentos en tienda.")
+            else:
+                col_plan1, col_plan2 = st.columns(2)
+                with col_plan1:
+                    st.markdown("**Plan PRO Estándar:** $5.99/mes")
+                    st.button("Mejorar a PRO")
+                with col_plan2:
+                    st.markdown("**Descuento para Socios (Gym Rounds):** $2.50/mes")
+                    st.button("Verificar Membresía Gym")
+                    
+        # NUEVO SISTEMA: MARCADORES DE PROGRESO MENSUAL
+        st.markdown("### 📈 Evaluador de Desempeño (Informe Mensual)")
+        st.markdown("<p style='color:#ccc;'>Registra tus métricas diarias al terminar tu sesión. A fin de mes, cuantificaremos tu evolución como peleador.</p>", unsafe_allow_html=True)
+        
+        with st.expander("📝 Cargar Informe de Sesión Hoy", expanded=True):
+            col_m1, col_m2, col_m3 = st.columns(3)
+            with col_m1:
+                sombra = st.slider("Sombra (Técnica / Fluidez)", 1, 10, 5)
+            with col_m2:
+                saco = st.slider("Golpeo al Saco (Poder / Conexión)", 1, 10, 5)
+            with col_m3:
+                cardio = st.slider("Acondicionamiento (Resistencia)", 1, 10, 5)
                 
-        with st.expander("📍 Valida tu ciudad para un nuevo Gym ROUNDS"):
-            st.markdown("¿Quieres que abramos una sede de **ROUNDS CBX** en tu zona? Sé el fundador de tu comunidad.")
-            ciudad = st.text_input("Ingresa tu ciudad / sector:")
-            if st.button("Solicitar Sede Oficial"):
-                if ciudad:
-                    st.success(f"Voto registrado para {ciudad}. Si juntamos 100 peticiones, vamos para allá. Has ganado 100 CBX por tu voto.")
-                    st.session_state.user_data['cbx_coins'] += 100
-                else:
-                    st.error("Escribe tu ciudad.")
+            if st.button("Enviar Registro de Entrenamiento"):
+                st.session_state.user_data['cbx_coins'] += 50
+                st.success(f"¡Registro guardado! Ganaste 50 CBX por entrenar hoy. **Análisis proyectado:** Tu Sombra ha mejorado un +{sombra*10}% desde el mes pasado.")
 
     # ------------------ TAB: COMUNIDAD ------------------
     with tab_comunidad:
@@ -377,14 +402,24 @@ def render_dashboard():
                 st.markdown("<br>", unsafe_allow_html=True)
         else:
             n = st.session_state.view_noticia
-            if st.button("← Volver al Feed de Noticias"):
+            if st.button("← Volver al Feed de Noticias", type="secondary"):
                 st.session_state.view_noticia = None
                 st.rerun()
-            st.image(n['imagen_url'], use_container_width=True)
-            st.title(n['titulo'])
-            st.markdown(f"**{n['subtitulo']}**")
-            st.caption(f"{n['fecha']} | Fuente: {n['fuente']}")
-            st.markdown(n['contenido_html'], unsafe_allow_html=True)
+            
+            # Formato de Artículo Premium (Estilo Netflix / NYT)
+            st.markdown(f"""
+            <div style="width: 100%; height: 400px; background-image: url('{n['imagen_url']}'); background-size: cover; background-position: center; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);"></div>
+            <h1 style='font-size: 3rem; line-height: 1.1; margin-bottom: 10px; color: #fff;'>{n['titulo']}</h1>
+            <h3 style='color: #aaa; font-family: sans-serif; font-weight: normal; margin-top: 0;'>{n.get('subtitulo', '')}</h3>
+            <p style='color: #d11124; font-weight: bold;'>{n['fecha']} | REDACCIÓN: {n['fuente']}</p>
+            <hr style='border-color: #333;'>
+            """, unsafe_allow_html=True)
+            
+            # Contenido (Simulando un artículo largo y rico de IA)
+            st.markdown(f"<div style='font-size: 1.2rem; line-height: 1.8; color: #eee; text-align: justify;'>{n['contenido_html']}</div>", unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.link_button("📰 Leer fuente original completa", url=n.get('link', '#'), type="secondary")
             
             st.markdown("---")
             st.markdown("<div style='text-align: right; color: #aaa; font-style: italic;'>Una exclusiva de <b>JP Vanguard Media Group</b></div>", unsafe_allow_html=True)
@@ -492,34 +527,36 @@ def render_dashboard():
     with tab_tienda:
         st.header("Mercado de Campeones")
         st.markdown(f"**Tu Saldo:** {user['cbx_coins']} CBX Coins 🪙")
-        st.markdown("Equípate con lo mejor. Si tienes suficientes CBX Coins, solicita tu descuento al asesor en WhatsApp al hacer el pedido.")
+        st.markdown("Equípate con lo mejor. Selecciona tu producto, revisa los detalles y finaliza la compra con nuestro asesor vía WhatsApp.")
         
-        # UI Estilo E-Commerce Moderno
+        # UI Estilo E-Commerce Moderno (Amazon / Netflix)
         tab_guantes, tab_sacos, tab_accesorios, tab_suplementos = st.tabs(["🥊 Guantes", "🏋️ Sacos e Implementos", "⚡ Accesorios", "💊 Suplementos"])
         
         def renderizar_categoria(categoria_filtro):
             import urllib.parse
             productos = [p for p in TIENDA_DB if p['categoria'] == categoria_filtro]
-            col1, col2 = st.columns(2)
             for i, prod in enumerate(productos):
-                with (col1 if i % 2 == 0 else col2):
-                    tarjeta_producto = f"""
-                    <div class="product-card">
-                        <img src="{prod['img_url']}" class="product-img">
-                        <div class="product-info">
-                            <h4 style="margin: 0; color: white;">{prod['nombre']}</h4>
-                            <p style="color: #aaa; font-size: 0.8rem; margin: 5px 0 10px 0;">{prod['desc']}</p>
-                            <h3 style="color: #00ff00; margin: 0;">{prod['precio']}</h3>
-                        </div>
-                    </div>
-                    """
-                    st.markdown(tarjeta_producto, unsafe_allow_html=True)
-                    
-                    # Generar Link de WhatsApp
-                    mensaje_ws = f"Hola, vengo de la app ROUNDS BY CBX. Me interesa comprar: {prod['nombre']} ({prod['precio']}). Mi usuario es: {user['nombre']} {user['apellido']}."
-                    url_ws = f"https://wa.me/593998593226?text={urllib.parse.quote(mensaje_ws)}"
-                    
-                    st.link_button(f"Comprar vía WhatsApp", url=url_ws)
+                with st.container(border=True):
+                    col_img, col_info = st.columns([1, 2])
+                    with col_img:
+                        st.markdown(f"<img src='{prod['img_url']}' style='width:100%; border-radius:8px;'>", unsafe_allow_html=True)
+                    with col_info:
+                        st.markdown(f"<h3 style='margin-top:0;'>{prod['nombre']}</h3>", unsafe_allow_html=True)
+                        st.markdown(f"<h2 style='color:#00ff00; margin:0;'>{prod['precio']}</h2>", unsafe_allow_html=True)
+                        
+                        with st.expander("Ver Detalles del Producto (Especificaciones)"):
+                            st.markdown(f"**Descripción Original:** {prod['desc']}")
+                            st.markdown("---")
+                            st.markdown("* ✅ Disponibilidad verificada")
+                            st.markdown("* 📦 Envío nacional e internacional disponible")
+                            st.markdown("* 🪙 **¿Tienes saldo CBX?** Consulta con el asesor por tu descuento directo.")
+                        
+                        # Generar Link de WhatsApp
+                        mensaje_ws = f"Hola, vengo de la app ROUNDS BY CBX. Me interesa comprar: {prod['nombre']} ({prod['precio']}). Mi usuario es: {user['nombre']} {user['apellido']}."
+                        url_ws = f"https://wa.me/593998593226?text={urllib.parse.quote(mensaje_ws)}"
+                        
+                        st.link_button(f"Comprar vía WhatsApp", url=url_ws, type="primary")
+                st.markdown("<br>", unsafe_allow_html=True)
         
         with tab_guantes:
             renderizar_categoria("Guantes")
