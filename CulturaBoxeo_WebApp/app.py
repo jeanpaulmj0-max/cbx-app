@@ -251,7 +251,7 @@ def render_dashboard():
         st.markdown("### 🏆 Beneficios y Planes")
         with st.container(border=True):
             if user['rol'] == 'pro':
-                st.success("✅ Eres usuario PRO. Tienes acceso total a las Comunidades de Fantasy y descuentos en tienda.")
+                st.success("✅ Eres usuario PRO. Tienes acceso total a las Comunidades y Descuentos.")
             else:
                 col_plan1, col_plan2 = st.columns(2)
                 with col_plan1:
@@ -260,6 +260,17 @@ def render_dashboard():
                 with col_plan2:
                     st.markdown("**Descuento para Socios (Gym Rounds):** $2.50/mes")
                     st.button("Verificar Membresía Gym")
+                    
+        # NUEVO SISTEMA: ACTIVIDADES DEL COACH
+        st.markdown("---")
+        st.markdown("### 📋 Entrenamiento del Día (Asignado)")
+        st.info(f"Tu esquina **{user['gym_origen']}** te ha asignado la siguiente misión para hoy:")
+        with st.container(border=True):
+            st.markdown("**🔥 Circuito de Resistencia (Semana 1)**")
+            st.markdown("- 3 Rounds de Sombra (Calentamiento)\n- 5 Rounds de Costal Pesado (Enfoque en combinaciones 1-2-3)\n- 100 Sentadillas libres")
+            if st.button("Marcar como completado ✅", use_container_width=True):
+                st.balloons()
+                st.success("¡Misión cumplida! Coach notificado.")
                     
         # SISTEMA DE ENTRENAMIENTO ESTILO FIGHTCAMP / PUNCHLAB
         st.markdown("### 📈 Bitácora de Entrenamiento (Hoy)")
@@ -363,18 +374,30 @@ def render_dashboard():
                 noticias_vivo = mock_data.NOTICIAS
             
             for n in noticias_vivo:
-                # Asegurar fallback de imagen ultra estricto
-                img_bg = n.get('imagen_url', '')
-                if not img_bg or len(str(img_bg)) < 10 or str(img_bg).lower() in ['none', 'null']:
-                    img_bg = "https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=800"
-                    
-                tarjeta_html = f"""<div style="position: relative; width: 100%; height: 380px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; background-image: url('{img_bg}'); background-size: cover; background-position: top center; border: 1px solid #333;"><div style="position: absolute; bottom: 0; left: 0; right: 0; height: 70%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);"></div><div style="position: absolute; top: 15px; left: 15px; color: white; font-size: 0.7rem; font-weight: bold; letter-spacing: 2px; text-shadow: 1px 1px 2px #000;">ROUNDS BY CBX</div><div style="position: absolute; top: 15px; right: 15px; color: #fff; font-size: 0.65rem; font-weight: bold; background: rgba(209,17,36,0.8); padding: 4px 10px; border-radius: 20px; border: 1px solid #555;">{n['fuente'].upper()}</div><div style="position: absolute; bottom: 20px; left: 20px; right: 20px;"><h2 style="color: white; margin: 0; line-height: 1.1; font-size: 2.2rem; text-transform: uppercase; text-shadow: 2px 2px 4px #000;">{n['titulo']}</h2><div style="height: 3px; width: 50px; background-color: #d11124; margin: 12px 0;"></div><small style="color: #ccc; font-size: 0.8rem;">{n['fecha']}</small></div></div>"""
-                st.markdown(tarjeta_html, unsafe_allow_html=True)
+                # Filtrar imagenes rotas o URLs extrañas
+                img_url = n.get('imagen_url', '')
+                if not img_url or "http" not in str(img_url):
+                    img_url = "https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=800"
                 
-                if st.button(f"Leer Artículo", key=f"btn_leer_{n['id']}"):
-                    n['imagen_url'] = img_bg # Actualizar el objeto con la imagen fallback
-                    st.session_state.view_noticia = n
-                    st.rerun()
+                with st.container(border=True):
+                    try:
+                        st.image(img_url, use_column_width=True)
+                    except:
+                        # Si Streamlit no puede procesar la imagen remotamente, usa un hard-fallback seguro
+                        img_url = "https://images.unsplash.com/photo-1599552375246-24ee029302e3?q=80&w=800"
+                        st.image(img_url, use_column_width=True)
+                        
+                    st.markdown(f"<h3 style='color:white; margin-bottom:0;'>{n['titulo']}</h3>", unsafe_allow_html=True)
+                    st.caption(f"📰 **{n['fuente'].upper()}** | 🕒 {n['fecha']}")
+                    
+                    col_leer, col_link = st.columns(2)
+                    with col_leer:
+                        if st.button(f"Leer Artículo", key=f"btn_leer_{n['id']}", use_container_width=True):
+                            n['imagen_url'] = img_url
+                            st.session_state.view_noticia = n
+                            st.rerun()
+                    with col_link:
+                        st.link_button("Noticia Original ↗", url=n.get('link', '#'), use_container_width=True)
                 st.markdown("<br>", unsafe_allow_html=True)
         else:
             n = st.session_state.view_noticia
@@ -400,104 +423,7 @@ def render_dashboard():
             st.markdown("---")
             st.markdown("<div style='text-align: right; color: #aaa; font-style: italic;'>Una exclusiva de <b>JP Vanguard Media Group</b></div>", unsafe_allow_html=True)
             
-            # Mercado de Predicción Interactivo
-            st.markdown("<br>", unsafe_allow_html=True)
-            with st.container(border=True):
-                st.markdown("<h4 style='color: #FFD700; margin-top:0;'>📊 MERCADO DE ESPECULACIÓN</h4>", unsafe_allow_html=True)
-                st.markdown(f"¿Qué crees que pasará respecto a esta noticia? Haz tu predicción y gana CBX Coins.")
-                
-                col_y, col_n = st.columns(2)
-                with col_y:
-                    if st.button("SÍ, SUCEDERÁ (Cuota x2.5)"):
-                        st.toast("Especulación registrada.", icon="📈")
-                with col_n:
-                    if st.button("NO SUCEDERÁ (Cuota x1.3)"):
-                        st.toast("Especulación registrada.", icon="📉")
-
-    # ------------------ TAB: FANTASY ------------------
-    with tab_fantasy:
-        st.header("Casino Digital - Fantasy Picks")
-        
-        st.info("💡 **VISIÓN EARLY ADOPTERS:** En este momento estamos validando un producto que en un futuro te permitirá **ganar dinero real**. Los usuarios más fieles que participen en esta fase Beta tendrán beneficios económicos exclusivos en la siguiente etapa.")
-        
-        with st.expander("🏆 ¿CÓMO CANJEAR TUS CBX COINS AHORA?", expanded=True):
-            st.markdown("""
-            El dinero real lo usas en la Tienda. Tus CBX Coins sirven para desbloquear súper-descuentos y beneficios:
-            *   🛒 **10,000 CBX:** Canjea por un cupón de 20% OFF en Guantes de Importación.
-            *   🥊 **20,000 CBX:** Canjea por 1 Sesión de Entrenamiento (Rounds) gratis.
-            *   💸 **Usuarios PRO:** Ganan un 15% adicional de descuento en toda la tienda automáticamente.
-            """)
-            
-        col_bank, col_bets = st.columns(2)
-        with col_bank:
-            st.markdown(f"<div style='background:#111; padding:15px; border-radius:8px; border-left:4px solid #FFD700;'><h4>Bankroll:</h4><h2 style='color:#00ff00; margin:0;'>{user['cbx_coins']} CBX 🪙</h2></div>", unsafe_allow_html=True)
-        with col_bets:
-            st.markdown(f"<div style='background:#111; padding:15px; border-radius:8px; border-left:4px solid #d11124;'><h4>Apuestas Activas:</h4><h2 style='color:white; margin:0;'>{len(st.session_state.mis_apuestas)} 🎟️</h2></div>", unsafe_allow_html=True)
-            
-        if len(st.session_state.mis_apuestas) > 0:
-            st.markdown("### 🎟️ Mis Boletas Activas")
-            for b in st.session_state.mis_apuestas:
-                st.markdown(f"""
-                <div style='background:rgba(34,34,34,0.9); padding:10px; border-radius:5px; border-left:3px solid #00ff00; margin-bottom:5px; color:white;'>
-                    <b>{b['pelea']}</b> | Pick: <span style='color:#FFD700;'>{b['pick']}</span> | Riesgo: {b['monto']} CBX | Pago Potencial: <b style='color:#00ff00;'>{b['retorno']:.2f} CBX</b>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # Infraestructura de Comunidades de Especulación
-        st.markdown("""
-        <div style='background-color: rgba(34,34,34,0.9); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;'>
-            <h4 style='color: #FFD700; margin-top: 0;'>👑 Conviértete en Promotor de Fantasy</h4>
-            <p style='color: #ccc; font-size: 0.9rem;'>
-            ¿Quieres liderar tu propia comunidad? Los usuarios <b>PRO ($5/mes)</b> pueden crear sus propios "Mercados de Especulación" (Ej: <i>¿Peleará McGregor vs Topuria en 2027?</i>) e invitar a otros a apostar, llevándose una comisión de los premios.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("CREAR MI PROPIO MERCADO (Solo PRO)"):
-            if user.get('rol') == 'pro':
-                st.success("Acceso de Promotor concedido. El panel de creador de mercados se habilitará en la Fase 2.")
-            else:
-                st.error("🔒 Servicio Bloqueado: Exclusivo para PROMOTORES.")
-                st.info("Mejora tu cuenta a PRO por solo $5.00/mes y obtén la licencia comercial para crear comunidades de especulación.")
-        
-        import mock_data
-        for cart in mock_data.FANTASY_CARTELERAS:
-            st.subheader(f"📅 {cart['titulo']}")
-            for p in cart['combates']:
-                with st.container(border=True):
-                    st.markdown(f"<h4 style='text-align: center; margin-bottom: 0;'>🥊 {p['peleador_a']} <span style='color:#d11124;'>VS</span> {p['peleador_b']} 🥊</h4>", unsafe_allow_html=True)
-                    
-                    # Infraestructura tipo Casino (Boleta de Apuesta)
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.markdown(f"<div style='text-align:center; padding:10px; background:rgba(17,17,17,0.9); color:white; border-radius:5px;'><b>{p['peleador_a']}</b><br>🔥 Cuota: x{p['cuota_a']}</div>", unsafe_allow_html=True)
-                    with col2:
-                        st.markdown(f"<div style='text-align:center; padding:10px; background:rgba(17,17,17,0.9); color:white; border-radius:5px;'><b>{p['peleador_b']}</b><br>🔥 Cuota: x{p['cuota_b']}</div>", unsafe_allow_html=True)
-                    
-                    st.markdown("---")
-                    col_bet1, col_bet2 = st.columns([2, 1])
-                    with col_bet1:
-                        monto = st.number_input("Monto a apostar (CBX Coins)", min_value=10, max_value=max(10, user['cbx_coins']), step=10, key=f"monto_{p['id']}")
-                        seleccion = st.selectbox("Selecciona tu ganador", [p['peleador_a'], p['peleador_b']], key=f"sel_{p['id']}")
-                    with col_bet2:
-                        cuota_actual = p['cuota_a'] if seleccion == p['peleador_a'] else p['cuota_b']
-                        retorno = monto * cuota_actual
-                        st.markdown(f"<div style='text-align:center; margin-top:25px;'><small>Retorno Potencial:</small><br><b style='color:#00ff00; font-size:1.2rem;'>{retorno:.2f} CBX</b></div>", unsafe_allow_html=True)
-                        if st.button("COLOCAR APUESTA", key=f"btn_bet_{p['id']}"):
-                            if user['cbx_coins'] >= monto:
-                                st.session_state.user_data['cbx_coins'] -= monto
-                                st.session_state.mis_apuestas.append({
-                                    "pelea": f"{p['peleador_a']} vs {p['peleador_b']}",
-                                    "pick": seleccion,
-                                    "monto": monto,
-                                    "retorno": retorno
-                                })
-                                st.success(f"¡Boleta ingresada con éxito! Tu saldo restante es {st.session_state.user_data['cbx_coins']} CBX.")
-                                st.rerun()
-                            else:
-                                st.error("Fondos insuficientes para esta apuesta.")
+            # Eliminado mercado de especulación para enfocar en entrenamiento
 
 
 
