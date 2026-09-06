@@ -140,14 +140,14 @@ def render_auth():
             email = st.text_input("Correo electrónico")
             password = st.text_input("Contraseña", type="password")
             if st.button("INICIAR SESIÓN", type="primary"):
-                success, msg, user_data = database.login_user(email, password)
+                success, data = database.authenticate_user(email, password)
                 if success:
                     st.session_state.logged_in = True
-                    st.session_state.user_data = user_data
+                    st.session_state.user_data = data
                     st.success("¡Bienvenido, campeón!")
                     st.rerun()
                 else:
-                    st.error("❌ " + msg)
+                    st.error("❌ " + data)
         else:
             st.subheader("Crear Pasaporte de Peleador")
             col1, col2 = st.columns(2)
