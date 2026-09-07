@@ -155,7 +155,7 @@ def render_auth():
             with col2: apellido = st.text_input("Apellido")
             email = st.text_input("Correo electrónico")
             password = st.text_input("Contraseña", type="password")
-            gym_origen = st.selectbox("¿Cuál es tu esquina (Sede)?", ["Independiente (Sin Gym)", "Rounds CBX (Matriz)", "Best Training", "CrossFit Company"])
+            gym_origen = st.selectbox("¿Cuál es tu esquina (Sede)?", ["Rounds x Best Training", "Rounds x CrossFit Company"])
             codigo_staff = st.text_input("Código de Staff (Solo Entrenadores)", type="password", help="Si eres alumno, deja este campo vacío.")
             
             if st.button("REGISTRARME", type="primary"):
@@ -227,13 +227,22 @@ def render_dashboard():
         nivel = (xp // 100) + 1
         xp_next = nivel * 100
         progreso_xp = (xp % 100)
-        # Temporada y Avatar
+        # Temporada y Avatar dinámica
         import base64
+        import pytz
+        from datetime import datetime
+        
+        tz_ecuador = pytz.timezone('America/Guayaquil')
+        ahora = datetime.now(tz_ecuador)
+        fin_de_ano = tz_ecuador.localize(datetime(2026, 12, 31, 23, 59, 59))
+        dias_restantes = (fin_de_ano - ahora).days
+        sesiones_hechas = st.session_state.get("entrenamientos_completados", 0)
         
         col_pass1, col_pass2 = st.columns([3, 1])
         with col_pass1:
-            st.markdown("### TEMPORADA 2026")
-            st.caption("Día 249 / 365 | 40 Sesiones Registradas")
+            st.markdown("### 🗓️ TEMPORADA 2026")
+            st.markdown(f"<p style='color:#FFD700; font-size:1.1rem; margin-bottom:0;'>{ahora.strftime('%d de %b, %Y | %H:%M')} (EC)</p>", unsafe_allow_html=True)
+            st.caption(f"⏳ Faltan {dias_restantes} días para el cierre | Sesiones Registradas: {sesiones_hechas}")
             
         with col_pass2:
             with st.popover("📷 Tomar Foto"):
@@ -290,42 +299,36 @@ def render_dashboard():
                     st.markdown("**Descuento para Socios (Gym Rounds):** $2.50/mes")
                     st.button("Verificar Membresía Gym")
                     
-        # NUEVO SISTEMA: ACTIVIDADES DEL COACH
+        # INICIALIZACIÓN DE VARIABLES
+        if "entrenamientos_completados" not in st.session_state: 
+            st.session_state.entrenamientos_completados = 0
+            
+        # REGISTRO DE SESIÓN DEL DÍA
         st.markdown("---")
-        st.markdown("### 📋 Entrenamiento del Día (Asignado)")
-        st.info(f"Tu esquina **{user['gym_origen']}** te ha asignado la siguiente misión para hoy:")
+        st.markdown("### 📋 Sesión del Día")
+        st.info("Registra tu asistencia y tu estado físico/emocional después de entrenar en tu sede.")
+        
         with st.container(border=True):
-            st.markdown("**🔥 Circuito de Resistencia (Semana 1)**")
-            st.markdown("- 3 Rounds de Sombra (Calentamiento)\n- 5 Rounds de Costal Pesado (Enfoque en combinaciones 1-2-3)\n- 100 Sentadillas libres")
-            if st.button("Marcar como completado ✅", use_container_width=True):
-                st.balloons()
-                st.success("¡Misión cumplida! Coach notificado.")
-                    
-        # REGISTRO DE ENTRENAMIENTO Y WELLNESS CHECK-IN
-        st.markdown("### 📈 Bitácora & Wellness Check-in")
-        st.markdown("<p style='color:#ccc;'>Registra tu estado post-sesión. Estos datos ayudan a tu Coach a nivelar la clase.</p>", unsafe_allow_html=True)
-        
-        if "entrenamientos_completados" not in st.session_state: st.session_state.entrenamientos_completados = 40
-        
-        with st.expander("📝 Registrar Sesión de Hoy", expanded=True):
+            st.markdown("#### 1. Evaluación Física y Emocional (Wellness Check-in)")
             mood_opts = ["Alegre", "Eufórico", "Relajado", "Motivado", "Neutral", "Cansado", "Agotado", "Frustrado", "Desanimado", "Estresado"]
-            st.selectbox("🧠 Estado de Ánimo (Mood)", mood_opts)
+            st.selectbox("🧠 Estado de Ánimo Principal", mood_opts)
             
             col_w1, col_w2 = st.columns(2)
             with col_w1:
-                st.slider("🔋 Energía", 1, 5, 3)
-                st.slider("❤️ Recuperación", 1, 5, 3)
+                st.slider("🔋 Nivel de Energía", 1, 5, 3)
+                st.slider("❤️ Nivel de Recuperación", 1, 5, 3)
             with col_w2:
-                st.slider("📉 Fatiga", 1, 5, 3)
-                st.slider("🔥 Motivación", 1, 5, 4)
+                st.slider("📉 Nivel de Fatiga", 1, 5, 3)
+                st.slider("🔥 Nivel de Motivación", 1, 5, 4)
                 
-            gap_opts = ["Jab", "Cross", "Hook", "Defensa", "Footwork", "Combinaciones", "Condición física", "Técnica", "Sparring", "Otro"]
-            st.selectbox("¿Qué sentiste que te faltó aprender/mejorar hoy?", gap_opts)
+            gap_opts = ["Nada, me siento bien", "Jab", "Cross", "Hook", "Defensa", "Footwork", "Combinaciones", "Condición física", "Técnica", "Sparring", "Otro"]
+            st.selectbox("¿Qué sentiste que te faltó aprender o mejorar hoy?", gap_opts)
             
-            if st.button("Guardar Sesión y Check-in", type="primary"):
+            st.markdown("#### 2. Confirmación de Asistencia")
+            if st.button("MARCAR SESIÓN COMO COMPLETADA 🥊", use_container_width=True, type="primary"):
                 st.session_state.entrenamientos_completados += 1
-                st.success(f"¡Sesión Guardada! (Sesión {st.session_state.entrenamientos_completados} de la temporada).")
-                st.rerun()
+                st.toast("🥊 ¡Sesión registrada con éxito! El coach ha recibido tus estadísticas.")
+                st.success(f"¡Has sumado una nueva sesión! (Sesión #{st.session_state.entrenamientos_completados} del año).")
 
         # Dashboard de Analíticas de Usuario
         if st.session_state.entrenamientos_completados > 0:
@@ -349,29 +352,56 @@ def render_dashboard():
                 col_c2.metric("Fatiga", "68%", "-2%")
                 col_c3.metric("Recuperación", "75%", "+10%")
                 st.info("Insight: Muchos alumnos en tu sede sienten que necesitan mejorar defensa esta semana.")
+                
+            st.markdown("---")
+            with st.expander("🌍 Liga de Sedes (Acceso Global)"):
+                st.write("Visualiza el rendimiento de otras sedes (Rounds x Best Training vs Rounds x CrossFit Company).")
+                clave = st.text_input("Clave de Mando Global", type="password")
+                if clave == "ADMIN2026":
+                    st.success("Acceso concedido.")
+                    col_g1, col_g2 = st.columns(2)
+                    with col_g1:
+                        st.markdown("**Rounds x Best Training**")
+                        st.metric("Asistencia Global", "1,240 Sesiones", "1° Lugar")
+                        st.metric("Motivación Promedio", "4.5 / 5")
+                    with col_g2:
+                        st.markdown("**Rounds x CrossFit Company**")
+                        st.metric("Asistencia Global", "980 Sesiones", "2° Lugar")
+                        st.metric("Motivación Promedio", "4.1 / 5")
+                    st.info("💡 Al final del año, puedes liberar estas métricas para fomentar la competencia sana entre alumnos de distintas sedes.")
 
-    # ------------------ TAB: ACTIVIDADES ------------------
+    # ------------------ TAB: ACTIVIDADES (GRUPO) ------------------
     with tab_actividades:
         st.header(f"Ring de la Sede: {user['gym_origen']}")
-        st.markdown("<p style='color:#ccc;'>Mensajes, misiones y recordatorios exclusivos de esta sede.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#ccc;'>Chat Grupal: Misiones y comunicados oficiales de tu entrenador.</p>", unsafe_allow_html=True)
         
         if user.get('rol') == 'coach':
             with st.expander(f"📝 Transmitir mensaje a todos en {user['gym_origen']}", expanded=True):
-                msj = st.text_area("Mensaje para la clase:")
-                if st.button("Enviar Actividad"):
+                msj = st.text_area("Mensaje para la clase (Ej. WOD, recordatorios):")
+                if st.button("Publicar en el Ring"):
                     st.success(f"Actividad publicada exitosamente a los alumnos de {user['gym_origen']}.")
                     
         st.markdown("### Septiembre 2026")
         
         with st.chat_message("coach", avatar="🥊"):
             st.markdown("**COACH ESTEFANO**")
-            st.write("Chicos, esta semana vamos a trabajar más defensa y movilidad. Recuerden practicar su jab-cross.")
+            st.write("Chicos, esta semana vamos a trabajar más defensa y movilidad. Recuerden practicar su jab-cross en casa.")
             st.caption("Hace 2 horas")
+            col_b1, col_b2, col_b3 = st.columns([1,1,2])
+            with col_b1:
+                if st.button("Aprobar ✅", key="apr1"): st.toast("Has aprobado la actividad.")
+            with col_b2:
+                if st.button("Duda ❓", key="duda1"): st.toast("Notificado al coach.")
             
         with st.chat_message("coach", avatar="🥊"):
             st.markdown("**COACH ESTEFANO**")
-            st.write("El sábado tendremos sesión especial de Sparring. 10:00 AM. Traigan cabezal.")
+            st.write("El sábado tendremos sesión especial de Sparring. 10:00 AM. Traigan cabezal y bucal obligatorio.")
             st.caption("Hace 1 día")
+            col_b1, col_b2, col_b3 = st.columns([1,1,2])
+            with col_b1:
+                if st.button("Aprobar ✅", key="apr2"): st.toast("Has aprobado la actividad.")
+            with col_b2:
+                if st.button("Duda ❓", key="duda2"): st.toast("Notificado al coach.")
 
     # ------------------ TAB: ALMANAQUE ------------------
     with tab_almanaque:
@@ -384,10 +414,12 @@ def render_dashboard():
             with st.container(border=True):
                 st.markdown("### 1. El Jab")
                 st.write("Golpe recto con la mano adelantada. Fundamento de la distancia.")
+                st.button("Ver Estudio Mecánico", key="tec1")
         with col_t2:
             with st.container(border=True):
                 st.markdown("### 2. El Cross (Recto)")
                 st.write("Golpe de poder con la mano atrasada. Rotación de cadera clave.")
+                st.button("Ver Estudio Mecánico", key="tec2")
                 
         st.markdown("---")
         st.subheader("Peleas Históricas del Mes")
