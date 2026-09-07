@@ -229,12 +229,12 @@ def render_dashboard():
         progreso_xp = (xp % 100)
         # Temporada y Avatar dinámica
         import base64
-        import pytz
-        from datetime import datetime
+        from datetime import datetime, timezone, timedelta
         
-        tz_ecuador = pytz.timezone('America/Guayaquil')
+        # Ecuador es UTC-5 (No requiere librerías externas que rompan la nube)
+        tz_ecuador = timezone(timedelta(hours=-5))
         ahora = datetime.now(tz_ecuador)
-        fin_de_ano = tz_ecuador.localize(datetime(2026, 12, 31, 23, 59, 59))
+        fin_de_ano = datetime(2026, 12, 31, 23, 59, 59, tzinfo=tz_ecuador)
         dias_restantes = (fin_de_ano - ahora).days
         sesiones_hechas = st.session_state.get("entrenamientos_completados", 0)
         
