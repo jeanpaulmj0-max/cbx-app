@@ -341,8 +341,8 @@ def render_dashboard():
             with col_a4: st.metric(label="🔥 Motivación", value="4.2 / 5", delta="Alta")
             
             st.markdown("---")
-            st.markdown(f"<h3 style='color:#fff;'>🌍 ESTADÍSTICAS DEL GRUPO ({user['gym_origen']})</h3>", unsafe_allow_html=True)
-            st.info("Métricas generales de tu comunidad hoy. Al alimentar tus datos, mejoras esta vista para todos.")
+            st.markdown(f"<h3 style='color:#fff;'>🌍 ESTADÍSTICAS DE LA SEDE</h3>", unsafe_allow_html=True)
+            st.info(f"Métricas generales de la comunidad en {user.get('gym_origen', 'tu gimnasio')} hoy.")
             col_g1, col_g2, col_g3 = st.columns(3)
             with col_g1: st.metric(label="👥 Asistencia Sede", value="45 Alumnos")
             with col_g2: st.metric(label="🧠 Ánimo Predominante", value="Motivado")
@@ -423,6 +423,11 @@ def render_dashboard():
                 if st.button("Aprobar ✅", key="apr2"): st.toast("Has aprobado la actividad.")
             with col_b2:
                 if st.button("Duda ❓", key="duda2"): st.toast("Notificado al coach.")
+                
+        # Interacción del Usuario
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.chat_input("Comenta o reacciona en el ring de tu sede..."):
+            st.toast("💬 Tu mensaje ha sido enviado al Ring.")
 
     # ------------------ TAB: ALMANAQUE ------------------
     with tab_almanaque:
@@ -430,28 +435,54 @@ def render_dashboard():
         st.markdown("<p style='color:#ccc;'>Archivo histórico y biblioteca técnica de Rounds.</p>", unsafe_allow_html=True)
         
         st.subheader("Técnicas Básicas (Drop 1)")
-        col_t1, col_t2 = st.columns(2)
-        with col_t1:
-            with st.container(border=True):
-                st.markdown("### 1. El Jab")
-                st.write("Golpe recto con la mano adelantada. Fundamento de la distancia.")
-                with st.expander("Ver Estudio Mecánico"):
-                    st.write("Empuja desde la pierna trasera, rota levemente el hombro y extiende el brazo regresando la mano a la guardia inmediatamente.")
-        with col_t2:
-            with st.container(border=True):
-                st.markdown("### 2. El Cross (Recto)")
-                st.write("Golpe de poder con la mano atrasada. Rotación de cadera clave.")
-                with st.expander("Ver Estudio Mecánico"):
-                    st.write("Gira la cadera y el pie trasero simultáneamente. El poder nace desde el suelo, no desde el brazo.")
-                
+        tecnicas = [
+            ("1. El Jab", "Golpe recto con la mano adelantada. Fundamento de la distancia.", "Empuja desde la pierna trasera, rota levemente el hombro y extiende el brazo regresando la mano a la guardia inmediatamente."),
+            ("2. El Cross (Recto)", "Golpe de poder con la mano atrasada. Rotación de cadera clave.", "Gira la cadera y el pie trasero simultáneamente. El poder nace desde el suelo, no desde el brazo."),
+            ("3. El Hook (Gancho)", "Golpe lateral de poder a corta/media distancia.", "Brazo en ángulo de 90 grados, rotación brusca del core transfiriendo el peso a la pierna contraria."),
+            ("4. El Uppercut", "Golpe ascendente ideal para el combate en corto.", "Flexión ligera de rodillas, impulso vertical y el puño sube protegiendo tu propia mandíbula con el hombro."),
+            ("5. El Roll (Uve)", "Defensa esquivando por debajo del ataque rival.", "No te dobles por la cintura; flexiona las rodillas dibujando una 'U' con tu cabeza mientras mantienes la mirada al frente."),
+            ("6. El Slip (Desliz)", "Esquiva lateral milimétrica.", "Mueve la cabeza justo por fuera de la trayectoria del golpe, flexionando ligeramente la rodilla de ese lado."),
+            ("7. El Pivote", "Giro para crear nuevos ángulos de ataque o escape.", "Deja tu pie adelantado plantado y gira el pie atrasado como un compás, manteniendo tu guardia firme."),
+            ("8. El Clinch", "Táctica defensiva para neutralizar al oponente.", "Acorta la distancia, esconde la cabeza en el hombro del rival y controla sus brazos por encima o por debajo."),
+            ("9. Bloqueo Alto (High Guard)", "La guardia defensiva más segura.", "Guantes pegados a la frente, codos cerrados protegiendo las costillas, barbilla hacia abajo."),
+            ("10. Parry (Desvío)", "Defensa activa usando la mano trasera.", "Movimiento corto y seco para desviar el jab rival, abriendo un hueco para tu propio contraataque.")
+        ]
+        
+        for i in range(0, len(tecnicas), 2):
+            col1, col2 = st.columns(2)
+            with col1:
+                with st.container(border=True):
+                    st.markdown(f"### {tecnicas[i][0]}")
+                    st.write(tecnicas[i][1])
+                    with st.expander("Ver Estudio Mecánico"): st.write(tecnicas[i][2])
+            with col2:
+                if i+1 < len(tecnicas):
+                    with st.container(border=True):
+                        st.markdown(f"### {tecnicas[i+1][0]}")
+                        st.write(tecnicas[i+1][1])
+                        with st.expander("Ver Estudio Mecánico"): st.write(tecnicas[i+1][2])
+
         st.markdown("---")
-        st.subheader("Peleas Históricas del Mes")
-        with st.container(border=True):
-            st.markdown("### Ali vs Frazier I (La Pelea del Siglo)")
-            st.caption("8 de Marzo, 1971 | Madison Square Garden")
-            st.write("La primera batalla épica entre dos campeones invictos. Un choque de estilos y personalidades que definió una era.")
-            with st.expander("📺 Reproducir Highlights de la Pelea"):
-                st.video("https://www.youtube.com/watch?v=jW0KxX_e87s")
+        st.subheader("Peleas Históricas (Drop 1)")
+        peleas = [
+            ("Ali vs Frazier I (La Pelea del Siglo)", "8 de Mar, 1971 | Nueva York", "La primera batalla épica entre dos campeones invictos. Un choque de estilos absolutos.", "https://en.wikipedia.org/wiki/Fight_of_the_Century"),
+            ("Hagler vs Hearns (The War)", "15 de Abr, 1985 | Las Vegas", "Conocidos como los tres rounds más salvajes en la historia del boxeo.", "https://en.wikipedia.org/wiki/Marvelous_Marvin_Hagler_vs._Thomas_Hearns"),
+            ("Corrales vs Castillo I", "7 de May, 2005 | Las Vegas", "El regreso más épico y milagroso de todos los tiempos en el round 10.", "https://en.wikipedia.org/wiki/Diego_Corrales_vs._Jos%C3%A9_Luis_Castillo"),
+            ("Gatti vs Ward I", "18 de May, 2002 | Uncasville", "Corazón, guerra pura y una muestra inmensa de respeto humano en el ring.", "https://en.wikipedia.org/wiki/Arturo_Gatti_vs._Micky_Ward"),
+            ("Tyson vs Holyfield I", "9 de Nov, 1996 | Las Vegas", "La noche que 'The Real Deal' expuso y derribó al hombre más temido del planeta.", "https://en.wikipedia.org/wiki/Mike_Tyson_vs._Evander_Holyfield"),
+            ("Chávez vs Taylor I", "17 de Mar, 1990 | Las Vegas", "El legendario nocaut del Gran Campeón Mexicano faltando solo 2 segundos para perder por puntos.", "https://en.wikipedia.org/wiki/Julio_C%C3%A9sar_Ch%C3%A1vez_vs._Meldrick_Taylor"),
+            ("Leonard vs Hearns I", "16 de Sep, 1981 | Las Vegas", "Ajedrez de alto nivel y dinamita en los pesos wélter.", "https://en.wikipedia.org/wiki/Sugar_Ray_Leonard_vs._Thomas_Hearns"),
+            ("Barrera vs Morales I", "19 de Feb, 2000 | Las Vegas", "El inicio de la trilogía más amarga y violenta del boxeo mexicano moderno.", "https://en.wikipedia.org/wiki/Marco_Antonio_Barrera_vs._%C3%89rik_Morales"),
+            ("Durán vs Leonard I (Brawl in Montreal)", "20 de Jun, 1980 | Montreal", "Manos de Piedra obligando al niño de oro a pelear en su terreno.", "https://en.wikipedia.org/wiki/Sugar_Ray_Leonard_vs._Roberto_Dur%C3%A1n"),
+            ("Pacquiao vs Márquez IV", "8 de Dic, 2012 | Las Vegas", "El contragolpe perfecto. El nocaut más impactante de la década.", "https://en.wikipedia.org/wiki/Manny_Pacquiao_vs._Juan_Manuel_M%C3%A1rquez_IV")
+        ]
+        
+        for p_titulo, p_fecha, p_desc, p_link in peleas:
+            with st.container(border=True):
+                st.markdown(f"### {p_titulo}")
+                st.caption(f"{p_fecha}")
+                st.write(p_desc)
+                st.link_button("🔗 Ver Referencia Histórica", url=p_link)
 
 
 
