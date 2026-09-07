@@ -22,6 +22,20 @@ st.markdown("""
     html, body, p, label, input, li { font-family: 'Oswald', sans-serif; color: #ffffff; }
     h1, h2, h3, h4, h5, h6 { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 1px; color: #ffffff !important;}
     
+    /* Arreglo visual Popover (Ajustes) - Forzar tema oscuro internamente */
+    div[data-testid="stPopoverBody"] { background-color: #1e1e1e !important; border: 1px solid #444 !important; }
+    div[data-testid="stPopoverBody"] p, div[data-testid="stPopoverBody"] label { color: #fff !important; }
+    div[data-testid="stPopoverBody"] button { border: 1px solid #555 !important; }
+    
+    /* Modernización del Chat (Estilo WhatsApp Dark Mode) */
+    .chat-bubble {
+        background-color: #005c4b;
+        padding: 12px 18px;
+        border-radius: 0px 15px 15px 15px;
+        margin-bottom: 5px;
+        border-left: 4px solid #25D366;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
     /* Forzar fondo oscuro y texto claro en Expanders */
     div[data-testid="stExpander"] details { background-color: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 8px; }
     div[data-testid="stExpander"] summary { color: #FFD700 !important; background-color: transparent !important;}
@@ -284,21 +298,6 @@ def render_dashboard():
             st.warning(f"**BOLSA ACTUAL:** {user['cbx_coins']} CBX Coins 🪙")
         with col_stats2:
             st.success("**MEMBRESÍA:** " + ("Activa (Pro)" if user['rol'] == 'pro' else "Socio de Gym" if user['rol'] == 'member' else "Amateur (Gratuita)"))
-            
-        # NUEVO SISTEMA: GIMNASIO / PLAN PRO
-        st.markdown("### 🏆 Beneficios y Planes")
-        with st.container(border=True):
-            if user['rol'] == 'pro':
-                st.success("✅ Eres usuario PRO. Tienes acceso total a las Comunidades y Descuentos.")
-            else:
-                col_plan1, col_plan2 = st.columns(2)
-                with col_plan1:
-                    st.markdown("**Plan PRO Estándar:** $5.99/mes")
-                    st.button("Mejorar a PRO")
-                with col_plan2:
-                    st.markdown("**Descuento para Socios (Gym Rounds):** $2.50/mes")
-                    st.button("Verificar Membresía Gym")
-                    
         # INICIALIZACIÓN DE VARIABLES
         if "entrenamientos_completados" not in st.session_state: 
             st.session_state.entrenamientos_completados = 0
@@ -309,36 +308,45 @@ def render_dashboard():
         st.info("Registra tu asistencia y tu estado físico/emocional después de entrenar en tu sede.")
         
         with st.container(border=True):
-            st.markdown("#### 1. Evaluación Física y Emocional (Wellness Check-in)")
-            mood_opts = ["Alegre", "Eufórico", "Relajado", "Motivado", "Neutral", "Cansado", "Agotado", "Frustrado", "Desanimado", "Estresado"]
-            st.selectbox("🧠 Estado de Ánimo Principal", mood_opts)
-            
-            col_w1, col_w2 = st.columns(2)
-            with col_w1:
-                st.slider("🔋 Nivel de Energía", 1, 5, 3)
-                st.slider("❤️ Nivel de Recuperación", 1, 5, 3)
-            with col_w2:
-                st.slider("📉 Nivel de Fatiga", 1, 5, 3)
-                st.slider("🔥 Nivel de Motivación", 1, 5, 4)
+            with st.form("wellness_form", clear_on_submit=True):
+                st.markdown("#### 1. Evaluación Física y Emocional (Wellness Check-in)")
+                mood_opts = ["Alegre", "Eufórico", "Relajado", "Motivado", "Neutral", "Cansado", "Agotado", "Frustrado", "Desanimado", "Estresado"]
+                st.selectbox("🧠 Estado de Ánimo Principal", mood_opts)
                 
-            gap_opts = ["Nada, me siento bien", "Jab", "Cross", "Hook", "Defensa", "Footwork", "Combinaciones", "Condición física", "Técnica", "Sparring", "Otro"]
-            st.selectbox("¿Qué sentiste que te faltó aprender o mejorar hoy?", gap_opts)
-            
-            st.markdown("#### 2. Confirmación de Asistencia")
-            if st.button("MARCAR SESIÓN COMO COMPLETADA 🥊", use_container_width=True, type="primary"):
-                st.session_state.entrenamientos_completados += 1
-                st.toast("🥊 ¡Sesión registrada con éxito! El coach ha recibido tus estadísticas.")
-                st.success(f"¡Has sumado una nueva sesión! (Sesión #{st.session_state.entrenamientos_completados} del año).")
-
+                col_w1, col_w2 = st.columns(2)
+                with col_w1:
+                    st.slider("🔋 Nivel de Energía", 1, 5, 3)
+                    st.slider("❤️ Nivel de Recuperación", 1, 5, 3)
+                with col_w2:
+                    st.slider("📉 Nivel de Fatiga", 1, 5, 3)
+                    st.slider("🔥 Nivel de Motivación", 1, 5, 4)
+                    
+                gap_opts = ["Nada, me siento bien", "Jab", "Cross", "Hook", "Defensa", "Footwork", "Combinaciones", "Condición física", "Técnica", "Sparring", "Otro"]
+                st.selectbox("¿Qué sentiste que faltó mejorar el día de hoy?", gap_opts)
+                
+                st.markdown("#### 2. Confirmación de Asistencia")
+                submitted = st.form_submit_button("MARCAR SESIÓN COMO COMPLETADA 🥊", use_container_width=True, type="primary")
+                if submitted:
+                    st.session_state.entrenamientos_completados += 1
+                    st.toast("🥊 ¡Sesión registrada con éxito! Tus datos se han reiniciado para mañana.")
+                    
         # Dashboard de Analíticas de Usuario
         if st.session_state.entrenamientos_completados > 0:
             st.markdown("---")
-            st.markdown("<h3 style='color:#FFD700;'>📊 ESTADÍSTICAS TEMPORADA 2026</h3>", unsafe_allow_html=True)
-            col_a1, col_a2 = st.columns(2)
-            with col_a1:
-                st.metric(label="✅ Sesiones (Año)", value=f"{st.session_state.entrenamientos_completados}", delta="¡Buen ritmo!")
-            with col_a2:
-                st.metric(label="💪 Motivación Promedio", value="4.2 / 5", delta="Alta")
+            st.markdown("<h3 style='color:#FFD700;'>📊 MIS ESTADÍSTICAS (TEMPORADA 2026)</h3>", unsafe_allow_html=True)
+            col_a1, col_a2, col_a3, col_a4 = st.columns(4)
+            with col_a1: st.metric(label="✅ Sesiones", value=f"{st.session_state.entrenamientos_completados}", delta="¡Buen ritmo!")
+            with col_a2: st.metric(label="❤️ Recuperación", value="3.8 / 5", delta="Estable")
+            with col_a3: st.metric(label="📉 Fatiga", value="2.5 / 5", delta="-0.2", delta_color="inverse")
+            with col_a4: st.metric(label="🔥 Motivación", value="4.2 / 5", delta="Alta")
+            
+            st.markdown("---")
+            st.markdown(f"<h3 style='color:#fff;'>🌍 ESTADÍSTICAS DEL GRUPO ({user['gym_origen']})</h3>", unsafe_allow_html=True)
+            st.info("Métricas generales de tu comunidad hoy. Al alimentar tus datos, mejoras esta vista para todos.")
+            col_g1, col_g2, col_g3 = st.columns(3)
+            with col_g1: st.metric(label="👥 Asistencia Sede", value="45 Alumnos")
+            with col_g2: st.metric(label="🧠 Ánimo Predominante", value="Motivado")
+            with col_g3: st.metric(label="🎯 Mayor Dificultad", value="Footwork")
 
     # ------------------ TAB: DASHBOARD COACH (Solo para Entrenadores) ------------------
     if user.get('rol') == 'coach':
@@ -381,22 +389,35 @@ def render_dashboard():
                 if st.button("Publicar en el Ring"):
                     st.success(f"Actividad publicada exitosamente a los alumnos de {user['gym_origen']}.")
                     
-        st.markdown("### Septiembre 2026")
+        from datetime import datetime, timezone, timedelta
+        tz_ecuador = timezone(timedelta(hours=-5))
+        mes_actual = datetime.now(tz_ecuador).strftime('%B %Y').upper()
         
-        with st.chat_message("coach", avatar="🥊"):
-            st.markdown("**COACH ESTEFANO**")
-            st.write("Chicos, esta semana vamos a trabajar más defensa y movilidad. Recuerden practicar su jab-cross en casa.")
-            st.caption("Hace 2 horas")
+        # Mapeo manual simple para español si se desea, por ahora lo dejamos estandar.
+        st.markdown(f"### MISIONES DEL MES")
+        
+        with st.container():
+            st.markdown("""
+            <div class='chat-bubble'>
+                <strong style='color:#FFD700;'>COACH ESTEFANO</strong><br>
+                Chicos, esta semana vamos a trabajar más defensa y movilidad. Recuerden practicar su jab-cross en casa.
+                <div style='text-align:right; font-size:0.8rem; color:#aaa;'>Hace 2 horas</div>
+            </div>
+            """, unsafe_allow_html=True)
             col_b1, col_b2, col_b3 = st.columns([1,1,2])
             with col_b1:
                 if st.button("Aprobar ✅", key="apr1"): st.toast("Has aprobado la actividad.")
             with col_b2:
                 if st.button("Duda ❓", key="duda1"): st.toast("Notificado al coach.")
             
-        with st.chat_message("coach", avatar="🥊"):
-            st.markdown("**COACH ESTEFANO**")
-            st.write("El sábado tendremos sesión especial de Sparring. 10:00 AM. Traigan cabezal y bucal obligatorio.")
-            st.caption("Hace 1 día")
+        with st.container():
+            st.markdown("""
+            <div class='chat-bubble'>
+                <strong style='color:#FFD700;'>COACH ESTEFANO</strong><br>
+                El sábado tendremos sesión especial de Sparring. 10:00 AM. Traigan cabezal y bucal obligatorio.
+                <div style='text-align:right; font-size:0.8rem; color:#aaa;'>Hace 1 día</div>
+            </div>
+            """, unsafe_allow_html=True)
             col_b1, col_b2, col_b3 = st.columns([1,1,2])
             with col_b1:
                 if st.button("Aprobar ✅", key="apr2"): st.toast("Has aprobado la actividad.")
@@ -414,12 +435,14 @@ def render_dashboard():
             with st.container(border=True):
                 st.markdown("### 1. El Jab")
                 st.write("Golpe recto con la mano adelantada. Fundamento de la distancia.")
-                st.button("Ver Estudio Mecánico", key="tec1")
+                with st.expander("Ver Estudio Mecánico"):
+                    st.write("Empuja desde la pierna trasera, rota levemente el hombro y extiende el brazo regresando la mano a la guardia inmediatamente.")
         with col_t2:
             with st.container(border=True):
                 st.markdown("### 2. El Cross (Recto)")
                 st.write("Golpe de poder con la mano atrasada. Rotación de cadera clave.")
-                st.button("Ver Estudio Mecánico", key="tec2")
+                with st.expander("Ver Estudio Mecánico"):
+                    st.write("Gira la cadera y el pie trasero simultáneamente. El poder nace desde el suelo, no desde el brazo.")
                 
         st.markdown("---")
         st.subheader("Peleas Históricas del Mes")
@@ -427,6 +450,8 @@ def render_dashboard():
             st.markdown("### Ali vs Frazier I (La Pelea del Siglo)")
             st.caption("8 de Marzo, 1971 | Madison Square Garden")
             st.write("La primera batalla épica entre dos campeones invictos. Un choque de estilos y personalidades que definió una era.")
+            with st.expander("📺 Reproducir Highlights de la Pelea"):
+                st.video("https://www.youtube.com/watch?v=jW0KxX_e87s")
 
 
 
